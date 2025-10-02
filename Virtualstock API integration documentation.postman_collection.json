@@ -1,0 +1,2539 @@
+{
+	"info": {
+		"_postman_id": "042778fe-2c25-4661-b288-e36d43743303",
+		"name": "Virtualstock API integration documentation",
+		"description": "## Virtualstock is a modular SaaS platform that sits between the retailer and their suppliers\n\nSuppliers could be manufacturers, distributors, vendors or the retailer’s own warehouses or store network. In most cases these suppliers are fulfilling dropship or marketplace orders for their client retailers.\n\nWhile Virtualstock has a range of modules and features, it has been predominantly deployed as a Dropship Solution.\n\nVirtualstock allows the supplier to efficiently share up-to-date order status, delivery status and stock availability information. Virtualstock also has Invoicing and Price Management modules.\n\nIn addition, Virtualstock can be used for rich product induction - where the supplier’s product data is validated against the retailer’s data model, before it is published to the retailer’s systems.\n\n<img src=\"https://content.pstmn.io/815143fd-6db0-4c82-82c4-d3d50dda4b86/VlMgSW5mb2dyYXBoaWNzIDMtMi5wbmc=\">\n\nThe purpose of the Virtualstock's APIs are to enable Retailers and Suppliers to create and manage their suppliers, products, stock availability, orders and order status.\n\nPlease note that Linnworks has a reusable connector to Virtualstock, so if you are a customer of Linnworks already you can instantly configure the integration and you don't need to do any bespoke integration. If you are not a customer of Linnworks already, but you sell through multiple channels and would be interested in having a system where you can centralise your stock and order management, automatically into all your channels including any Virtualstock customers, please see here for more info:\n\n[https://www.linnworks.com/connect/lw-virtualstock-emea](https://www.linnworks.com/connect/lw-virtualstock-emea)\n\n# Overview\n\nIn order to begin using this API, you should first have been set up and have been provided with at least a test supplier have credentials for the API.\n\nIf you want to verify API calls via Postman, you can acquire the Postman pack here. See the \"Run in postman\" button at the top right of this page.\n\n# Breaking Change Policy\n\nAs our APIs evolve, we will make reasonable efforts to notify you of breaking changes in advance with sufficient time to adapt to these changes.\n\n> Important! \n  \n\nReview this guide carefully to understand what kind of changes we consider to be breaking and non-breaking, and how to ensure that your application can adapt automatically to any change we categorise as non-breaking.\n\n**Definition**\n\nA breaking change is a change that may require you to make changes to your application in order to avoid disruption to your integration. The following are a few examples of changes we consider breaking:\n\n- Changes to existing permission definitions\n    \n- Removal of an allowed parameter, request field or response field\n    \n- Addition of a required parameter or request field without default values\n    \n- Changes to the intended functionality of an endpoint. For example, if a DELETE request previously used to archive the resource but now hard deletes the resource.\n    \n- Introduction of a new validation\n    \n\nA non-breaking change is a change that you can adapt to at your own discretion and pace without disruption. In most cases, we will communicate non-breaking changes after they are already made. Ensure that your application is designed to be able to handle the following types of non-breaking changes without prior notice:\n\n- Addition of new endpoints\n    \n- Addition of new methods to existing endpoints\n    \n- New fields in responses\n    \n- New optional request fields or parameters\n    \n- New required request fields that have default values\n    \n- Addition of a new value returned for an existing text field\n    \n- Changes to the order of fields returned within a response\n    \n- Addition of an optional request header\n    \n- Removal of redundant request header\n    \n- Changes to the length of data returned within a field\n    \n- Changes to the overall response size\n    \n- Changes to error messages. We do not recommend parsing error messages to perform business logic. Instead, you should only rely on HTTP response codes and error codes.\n    \n- Fixes to HTTP response codes and error codes from incorrect code to correct code\n    \n\nYou can either request an SFTP server to be set up for you, or use your own. In either case you will be authenticating using the username and password for SFTP account.\n\n# REST API Error Codes\n\n| **Code** | **Description** |\n| --- | --- |\n| 200 OK | The request you made returned successfully |\n| 201 Created | Your POST was successful and the entity you submitted has been created on our platform |\n| 401 Unauthorised | Your authentication credentials are incorrect |\n| 400 Bad Request | Your payload contains an invalid value or a missing value or is not structured correctly.  <br>  <br>There will be a secondary error code and a message indicating which type of error occured. |\n| 404 Not found | Your URL / Endpoint is not correct or contains an invalid REST ID |\n| 500 Internal Server Error | Our service is in a degraded state or is in scheduled downtime for a release |\n| 429 Request was throttled | See the details on throttling below |\n\n# Throttling limit\n\nAll api requests are limited to **250** requests per minute. You will be given an error message informing you when you are next able to make another API call if you exceed these this limit. So for example you can call the API 250 times in the first few seconds of the minute, but have to then wait until the next minute to call again.\n\nThe API will return a status code of `429` and a message in the response `Request was throttled. Request was throttled. Expected available in XX.0 seconds.`\n\n# Flat file API (CSV via SFTP) for Suppliers\n\nIf you are unable to integrate your applications with our REST API or have a previous integration to Virtualstock with our Flat file SFTP API that you would like to replicate for your integration, then please download our Flat file CSV over SFTP API documentation.\n\n[VIEW FLAT FILE SFTP API DOCUMENTATION](https://docs.google.com/document/d/e/2PACX-1vQ1AzzIHEfFBc-cN-H7ak8PA--T5vqYiGuenDQdlCzJBGjRKVXa6MHWE1nHqS7oZw/pub)\n\n# Invoice as JSON files via SFTP for Retailers\n\nThis interface is for retailers to receive invoices created by suppliers as single JSON files over SFTP for each invoice.  \n[DOWNLOAD JSON FILE SFTP INVOICES API DOCUMENTATION](https://drive.google.com/uc?export=view&id=1zO7s3fSQ16kq6mN4QOYP_f8JBPEOSTI2)\n\n# Order Events report CSV via SFTP for Retailers\n\nThis interface is for retailers to receive CSV files over SFTP all events made by suppliers or carriers to orders. \"Events:\" are order line status changes, order comments and tracking.  \n[DOWNLOAD EVENT REPORT DOCUMENTATION](https://drive.google.com/uc?export=view&id=1Y8ndVp_s18SGSxeqCajKygmM_d3dI3Zy)\n\n# Order tracking status updates via Webhook\n\n## Introduction\n\nThe purpose of this Webhook API is for a retailer to receive all the orders tracking status updates that are made by suppliers or their carriers. The retailer will need to build a REST API to the specifications detailed below, and Virtualstock will require the URL and credentials to start receiving these updates.\n\n## Authentication\n\nThe Webook APIs use Basic Authentication. Usernames and passwords for the environment that Virtualstock needs to interact with need to be provided to Virtualstock when the API is ready for testing.\n\n## Content types\n\nThis service sends JSON content with a Content-Type header set to application/json.\n\n## Payload, method and endpoint\n\nPOST the following payload to a URL of your choosing.\n\n``` json\n{\n    \"channel\": \"CHANNEL1\", //(optional)  \n    \"carrier\": \"DPD\",\n    \"dispatched_date\": \"2019-05-23T00:00:00+0000\",\n    \"estimated_delivery_date\": \"2019-05-23T00:00:00+0000\",\n    \"order_number\": \"ORDER121821\",\n    \"tracking_number\": \"TXD98798798798\",\n    \"tracking_url\": \"https://www.some.site.com/tracking\",\n    \"status\": \"DELIVERED\",\n    \"checkpoint_time\": \"2019-05-23T13:09:51+0000\",\n    \"tracking_message\": \"Manchester HUB\",\n    \"items\": [\n        {\n            \"line_ref\": \"001\",\n            \"part_number\": \"sku-002014\",\n            \"quantity\": 10\n        }\n    ],\n    \"ts\": 15484698531106 //(unique timestamp)\n}\n\n ```\n\n| **Field name** | DataType | Description |\n| --- | --- | --- |\n| part_number | Text255 | The unique identifier for the product |\n| line_ref | Text100 | The line reference is unique to each line on the order. |\n| quantity | Positive Integer | The number of items from the original order that are Dispatched with this shipment. |\n| order_number | Text100 | Unique order reference |\n| channel | Text100 | optional) An “Order Channel” that you have configured for your instance of Virtualstock. Channels are used to separate orders by Region, or Buying groups within one organisation. Use “” if you do not use Channels. |\n| tracking_number | Text100 | The consignment or tracking number provided to Virtualstock by the supplier when they Dispatch the order. |\n| status | Text50 | The current tracking status of the order item, e.g PENDING, DELIVERED. [See all the statuses that could be provided here in the Order status section &gt; \"Tracking status\" table](https://api-docs.virtualstock.com/#985ad47e-a140-4645-b09f-60cbe50584a2) |\n| tracking_message | Text255 | Comment related to the status change. e.g. “Arrived at Hub” |\n| carrier | Text100 | Carrier name e.g. “Green van”  <br>This will have been set on Dispatch of the order, but if provided this will replace the value defined on dispatch |\n| tracking_url | Text255 | Some suppliers will provide the Carrier's website tracking URL. This is very often not populated, but Virtualstock will pass it on if we receive it from suppliers |\n| dispatch_date | DateTime | The Date that the supplier provided to Virtualstock to indicate when the order was Dispatched from their warehouse.  <br>e.g. 2019-05-23T00:00:00+0000 (UTC) |\n| estimated_delivery_date | DateTime | The Date that the supplier provided to Virtualstock to indicate when the order in expected to arrive  <br>e.g. 2019-05-23T00:00:00+0000 (UTC) |\n| checkpoint_time | DateTime | A number generated by Virtualstock, unique to each tracking message |\n\n## Exceptions & Error handling\n\nThe expectation is that the Retailer building this Webhook API will respond with the following response codes when Virtualstock calls their API. For any of these errors, if Virtualstock fails to deliver the update, it will attempt to replay failed messages several times over the course of 24 hours. Virtualstock will log the failure and an alert will be monitored by our Service Desk team, who will be in touch to help resolve connectivity.\n\n**ParseError**  \nRaised if the request contains malformed data when accessing request.data.  \nThis exception results in a response with the HTTP status code \"400 Bad Request\".  \n**  \nAuthenticationFailed**  \nRaised when an incoming request includes incorrect authentication.  \nThis exception results in a response with the HTTP status code \"401 Unauthenticated\", but it may also result in a \"403 Forbidden\" response, depending on the authentication scheme in use.\n\n**NotAuthenticated**  \nRaised when an unauthenticated request fails the permission checks.  \nThis exception results in a response with the HTTP status code \"401 Unauthenticated\", but it may also result in a \"403 Forbidden\" response, depending on the authentication scheme in use. See the authentication documentation for more details.\n\n**PermissionDenied**  \nRaised when an authenticated request fails the permission checks.  \nThis exception results in a response with the HTTP status code \"403 Forbidden\".\n\n**Throttled**  \nRaised when an incoming request fails the throttling checks.  \nThis exception results in a response with the HTTP status code \"429 Too Many Requests\". Virtualstock are reviewing the API performance metrics and as such are not able to share the throttling limits that will apply.\n\n**ValidationError**  \nThis exception results in a response with the HTTP status code \"400 Bad Request\".\n\n# REST API Endpoints\n\nListed below are all the endpoints that you are able to use for your integration",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "30625126",
+		"_collection_link": "https://nav222.postman.co/workspace/7fdd3b12-051d-4896-aefe-7689f781a7dd/collection/12837328-042778fe-2c25-4661-b288-e36d43743303?action=share&source=collection_link&creator=30625126"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Request token",
+					"request": {
+						"auth": {
+							"type": "bearer"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"your-username\",\n    \"password\": \"your-password\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{v4-domain}}/restapi/v4/token",
+							"host": [
+								"{{v4-domain}}"
+							],
+							"path": [
+								"restapi",
+								"v4",
+								"token"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Request token",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"username\": \"your-user-name\",\n    \"password\": \"your-password\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{v4-domain}}/restapi/v4/token",
+									"host": [
+										"{{v4-domain}}"
+									],
+									"path": [
+										"restapi",
+										"v4",
+										"token"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Server",
+									"value": "nginx"
+								},
+								{
+									"key": "Date",
+									"value": "Wed, 17 May 2023 12:48:56 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Content-Length",
+									"value": "491"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Vary",
+									"value": "Accept,Accept-Language,Cookie"
+								},
+								{
+									"key": "Allow",
+									"value": "POST, OPTIONS"
+								},
+								{
+									"key": "Content-Language",
+									"value": "en-gb"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "DENY"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-XSS-Protection",
+									"value": "1; mode=block"
+								},
+								{
+									"key": "Referrer-Policy",
+									"value": "same-origin"
+								},
+								{
+									"key": "Set-Cookie",
+									"value": "sessionid=7iwngla3pxnyif6lcm4htgmgr98txjsv; expires=Wed, 17 May 2023 16:48:56 GMT; Max-Age=14400; Path=/; SameSite=Lax; Secure"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"refresh\": \"your-refresh-token\",\n    \"access\": \"your-access-token\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Refresh token",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjg0MzI4MDM2LCJpYXQiOjE2ODQzMjc3MzYsImp0aSI6ImFiYmZhNTM1ZDZiZTRhZDI4N2U1YmI1N2Q4MzdmOTQ1IiwidXNlcl9pZCI6MTUzM30.MAInU0e5o3Ey-Br0bkq85GDCnfY0iclxcoETSbcF3jQ",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"refresh\": \"your-refresh-token\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{v4-domain}}/restapi/v4/token/refresh",
+							"host": [
+								"{{v4-domain}}"
+							],
+							"path": [
+								"restapi",
+								"v4",
+								"token",
+								"refresh"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Refresh token",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"refresh\": \"your-new-access-token\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{v4-domain}}/restapi/v4/token/refresh",
+									"host": [
+										"{{v4-domain}}"
+									],
+									"path": [
+										"restapi",
+										"v4",
+										"token",
+										"refresh"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Server",
+									"value": "nginx"
+								},
+								{
+									"key": "Date",
+									"value": "Wed, 17 May 2023 13:22:38 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Content-Length",
+									"value": "245"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Vary",
+									"value": "Accept,Accept-Language,Cookie"
+								},
+								{
+									"key": "Allow",
+									"value": "POST, OPTIONS"
+								},
+								{
+									"key": "Content-Language",
+									"value": "en-gb"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "DENY"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-XSS-Protection",
+									"value": "1; mode=block"
+								},
+								{
+									"key": "Referrer-Policy",
+									"value": "same-origin"
+								},
+								{
+									"key": "Set-Cookie",
+									"value": "sessionid=7iwngla3pxnyif6lcm4htgmgr98txjsv; expires=Wed, 17 May 2023 17:22:38 GMT; Max-Age=14400; Path=/; SameSite=Lax; Secure"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"access\": \"your-new-access-token\"\n}"
+						}
+					]
+				}
+			],
+			"description": "**REST API**\n\nVirtualstock REST API is secured by HTTPS protocol, which is always enabled. HTTPS protocol uses HTTPS-within-TLS, so TLS v1.2 provides both confidentiality as well as integrity.\n\nOur application uses JWT token based authentication. Learn more about [JWT here](https://jwt.io/introduction).\n\n1. **Obtain an initial JWT token:** Typically, you will need to authenticate with the API server by providing your credentials. Upon successful authentication, you will receive an initial JWT token.\n    \n2. **Store the JWT token securely:** Store the received JWT token securely, either in memory or in a persistent storage like a database or file.\n    \n3. **Include the JWT token in API requests:** For each subsequent API request, include the JWT token in the request headers as an authorization bearer token. The exact method to do this may vary depending on the library or framework you're using for API calls.\n    \n4. **Handle token expiration:** JWT tokens have an expiration time set by the server. You need to monitor the expiration time and handle token refresh before it expires.\n    \n5. **Refresh the JWT token:** Before the token expiration, make a separate API call to a designated endpoint or route that allows you to refresh the token. This call typically requires providing the expired token along with any necessary refresh token or credentials.\n    \n6. **Receive and update the new JWT token:** After the refresh API call, you will receive a new JWT token. Update the stored token with the new one and continue using it for subsequent API requests.\n    \n\nYour `access` token is valid for 5 minutes. Use the `Refresh token` endpoint passing the `refresh` token to get a new `access` token.\n\nYour `refresh` token is valid for 4 hours.\n\n_Here's a Python code snippet_\n\n``` python\nimport requests\n# Obtain an initial JWT token (authentication step)\ninitial_token = \"your_initial_token_here\"\n# Include the JWT token in the request headers\nheaders = {\"Authorization\": f\"Bearer {initial_token}\"}\n# Make a request to the API\nresponse = requests.get(\"https://api.sandbox.virtualstock.com/restapi/v4/orders/?format=json\", headers=headers)\n# Handle token expiration\nif response.status_code == 401:  # Unauthorized error\n    # Refresh the JWT token (refresh step)\n    refresh_token = \"your_refresh_token_here\"\n    refresh_payload = {\"refresh_token\": refresh_token}\n    refresh_response = requests.post(\"https://api.sandbox.virtualstock.com/restapi/v4/token/refresh\", json=refresh_payload)\n    if refresh_response.status_code == 200:  # Successful refresh\n        # Update the stored token with the new one\n        new_token = refresh_response.json()[\"access_token\"]\n        headers[\"Authorization\"] = f\"Bearer {new_token}\"\n        # Retry the original request with the new token\n        response = requests.get(\"https://api.sandbox.virtualstock.com/restapi/v4/orders/?format=json\", headers=headers)\n\n ```\n\nHere's a PHP example of the same\n\n``` php\n// Initial JWT token (authentication step)\n$initial_token = \"your_initial_token_here\";\n// Set the headers with the JWT token\n$headers = [\n    \"Authorization: Bearer $initial_token\",\n    \"Content-Type: application/json\"\n];\n// Function to make GET requests using cURL\nfunction make_request($url, $headers) {\n    $ch = curl_init($url);\n    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);\n    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);\n    $response = curl_exec($ch);\n    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);\n    curl_close($ch);\n    return ['response' => $response, 'http_code' => $http_code];\n}\n// Make an API request to get the orders\n$response_data = make_request(\"https://api.sandbox.virtualstock.com/restapi/v4/orders/?format=json\", $headers);\n$response = json_decode($response_data['response'], true);\n$http_code = $response_data['http_code'];\n// Handle token expiration (401 Unauthorized)\nif ($http_code == 401) {\n    // Refresh token logic\n    $refresh_token = \"your_refresh_token_here\";\n    $refresh_payload = json_encode(['refresh_token' => $refresh_token]);\n    // Prepare refresh token cURL request\n    $ch = curl_init(\"https://api.sandbox.virtualstock.com/restapi/v4/token/refresh\");\n    curl_setopt($ch, CURLOPT_POST, true);\n    curl_setopt($ch, CURLOPT_POSTFIELDS, $refresh_payload);\n    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);\n    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);\n    $refresh_response = curl_exec($ch);\n    $refresh_http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);\n    curl_close($ch);\n    // Check if refresh was successful\n    if ($refresh_http_code == 200) {\n        $refresh_response_data = json_decode($refresh_response, true);\n        $new_token = $refresh_response_data[\"access_token\"];\n        // Update the authorization header with the new token\n        $headers = [\n            \"Authorization: Bearer $new_token\",\n            \"Content-Type: application/json\"\n        ];\n        // Retry the original request with the new token\n        $response_data = make_request(\"https://api.sandbox.virtualstock.com/restapi/v4/orders/?format=json\", $headers);\n        $response = json_decode($response_data['response'], true);\n    } else {\n        // Handle token refresh failure\n        echo \"Failed to refresh the token. HTTP Code: $refresh_http_code\";\n    }\n}\n// Output the API response\necho \"<pre class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27;>\";\nprint_r($response);\necho \"</pre>\";\n?>\n\n ```\n\n**Our REST API does still support Basic Authentication with just your username and password, but JWT is advised as Basic Auth will eventually be depreciated SFTP API**\n\nIf you're using the SFTP API you simply use the username and password provide by our support team.",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Order management",
+			"item": [
+				{
+					"name": "V4",
+					"item": [
+						{
+							"name": "Retailers",
+							"item": [
+								{
+									"name": "Create an Order",
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json",
+												"name": "Content-Type",
+												"type": "text"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"supplier\": \"{{v4-domain}}/restapi/v4/suppliers/SUPPLIER_RESTFUL_ID/\",\n    \"order_reference\": \"TEST1234\",\n    \"additional_order_reference\": \"additional_ref001\",\n    \"order_date\": \"2021-02-23T10:41:59\",\n    \"test_flag\": false,\n    \"currency_code\": \"GBP\",\n    \"purchase_order_reference\": \"PO0001\",\n    \"end_user_purchase_order_reference\": \"USER_PO0002\",\n    \"shipping_store_number\": \"1200\",\n    \"delivery_service_code\": \"standard\",  //remove field if not in use\n    \"comment\": \"This is a big order\",\n    \"subtotal\": \"10.00\",\n    \"tax\": \"2.00\",\n    \"total\": \"12.00\",\n    \"items\": [\n        {\n            \"supplier_sku_reference\": \"EXERT00001\",\n            \"retailer_sku_reference\": \"RETAILERSKU0001\",\n            \"retailer_additional_reference\": \"Addtional Ref 1\",\n            \"line_reference\": \"123\",\n            \"name\": \"Lenovo IdeaPad 3 14ADA05 14 Inch FHD Laptop - Silver\",\n            \"description\": \"Spot check line item\",\n            \"quantity\": 2,\n            \"unit_cost_price\": \"5.00\",\n            \"subtotal\": \"10.00\",\n            \"tax_rate\": \"20.00\",\n            \"tax\": \"2.00\",\n            \"total\": \"12.00\",\n            \"promised_date\": \"2021-03-20T00:00:00\"\n        }\n    ],\n    \"shipping_address\": {\n        \"full_name\": \"Billy Higgins\",\n        \"line_1\": \"London Road\",\n        \"line_2\": \"Flat x\",\n        \"city\": \"Reading\",\n        \"state\": \"Berkshire\",\n        \"postal_code\": \"RG1 XXX\",\n        \"phone\": \"+44 0777 333 222\",\n        \"email\": \"test@virtualstock.com\",\n        \"country\": \"GB\"\n    }\n}"
+										},
+										"url": {
+											"raw": "{{v4-domain}}/restapi/v4/orders/?format=json",
+											"host": [
+												"{{v4-domain}}"
+											],
+											"path": [
+												"restapi",
+												"v4",
+												"orders",
+												""
+											],
+											"query": [
+												{
+													"key": "format",
+													"value": "json"
+												}
+											]
+										},
+										"description": "# Introduction\n\nWith this call, you can generate a brand new order, and associate it to your supplier. The example request contains every possible field you could use in the sample request.\n\n# Attribute Summary\n\n| Field | Required | Field type | Limit | Description | Sample content |\n| --- | --- | --- | --- | --- | --- |\n| supplier | Y | Text | 100 | Supplier ID (link) | [https://domain/restapi/v2/suppliers/nnn/](https://) where nnn is unique Supplier REST ID |\n| order_reference | Y | Text | 100 | Unique identifier for the order | TEST-180711145243 |\n| order_date | Y | Date | 20 | The date of the order | 2018-07-11T14:52:43 |\n| additional_order_reference | N | Text | 100 | An additional reference that the retailer may wish to provide | CHANNEL-180711145343 |\n| purchase_order_reference | N | Text | 100 | The PO reference that originated the order | PO0002 |\n| end_user_purchase_order_reference | N | Text | 100 | End customers reference number, supplied by the retailer | ENDUSER-180711145343 |\n| shipping_store_number | N | Text | 100 | An optional identifier for your warehouses or store number |  |\n| delivery_service_code | Conditional | Text | 100 | An optional field if you remove it from the payload. Used to specify which delivery service you want this order to be labelled as. You can manage your delivery service codes in your Organisation settings area. | e.g standard or express |\n| comment | N | Text | 255 | Free text field - text visible in Comments & Order History | Comment to the order |\n| test_flag | N | Boolean | N/A | Flag to indicate this as a test order | True - for a test order |\n| shipping_address.full_name | Y | Text | 100 | The full name of the destination customer | Peter Radshore |\n| shipping_address.line_1 | Y | Text | 255 | First line of the address of the destination customer | Penny Royal Road |\n| shipping_address.line_2 | N | Text | 100 | Second line of the address of the destination customer | Danbury |\n| shipping_address.city | N | Text | 100 | City of the destination customer | Reading |\n| shipping_address.state | C | Text | 100 | State of the destination customer. If you add this field to the payload it must not be blank or null, however you can exclude it completely from the payload. | Berkshire |\n| shipping_address.postal_code | Y | Text | 100 | Postcode of the destination customer | LS28 |\n| shipping_address.country | Y | Text | 100 | Country of the destination customer | GB |\n| shipping_address.phone | N | Text | 100 | Phone number of of the destination customer | 1793707686 |\n| shipping_address.email | C | Text | 75 | Email address of the destination customer. If you add this field to the payload it must not be blank or null, however you can exclude it completely from the payload. | [peter@testing.com](https://) |\n| currency_code | N | Text | 3 | Default: GBP ISO 3 letter supported currency code. Currently supporting : (GBP,EUR,USD,AUD or NZD) | GBP |\n| \\-- | \\-- | \\-- | \\-- | \\-- | \\-- |\n| items | node | node | Node | node | No data required |\n| retailer_sku_reference | N\\* | Text | 100 | \\*is required, if retailer sku is the product identifier. EAN, GTIN or other Product SKU identifier used by the retailer | RET1004613 |\n| supplier_sku_reference | N\\* | Text | 255 | \\*is required if supplier sku is the product identifier. EAN, GTIN or other Product SKU identifier used by the supplier | 1004613 |\n| retailer_additional_reference | N | Text | 100 | Retailers aditional identifier for product | 100013292 |\n| line_reference | Y | Text | 100 | Retailers unique identifier for the line within and order  <br>**PLEASE NOTE: do not use leading zeros as this can cause problems with suppliers and Excel templates** | 100013292 |\n| quantity | Y | Numeric | None | The ordered quantity | 1 |\n| name | Y | Text | 255 | Name of the order item | The test widget 3892 |\n| description | N | Text | 255 | Description of the order item | Test widget |\n| unit_cost_price | Y | Decimal | 14 Digits 2 Decimals | The cost price of the item | 69 |\n| subtotal | Y | Decimal | 14 Digits 2 Decimals | Subtotal of the order line | 150 |\n| tax | Y | Decimal | 14 Digits 2 Decimals | VAT of the order line | 28 |\n| tax_rate | Y | Decimal | 14 Digits 2 Decimals | VAT Rate of the order line | 20 |\n| total | Y | Decimal | 14 Digits 2 Decimals | Total order line price (sub_total + tax) | 178 |\n| promised_date | N | Date | 20 | Promise date of the order line. Should be populated in order to track supplier compliance. | 2018-07-14T08:00:00 |"
+									},
+									"response": [
+										{
+											"name": "Create an order",
+											"originalRequest": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json",
+														"type": "text"
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"supplier\": \"https://{{v4-domain}}/restapi/v4/suppliers/7/\",\n    \"order_reference\": \"RDREST024\",\n    \"additional_order_reference\": \"aditional_ref001\",\n    \"order_date\": \"2021-02-23T10:41:59\",\n    \"test_flag\": false,\n    \"currency_code\": \"GBP\",\n    \"purchase_order_reference\": \"PO0001\",\n    \"end_user_purchase_order_reference\": \"USER_PO0002\",\n    \"shipping_store_number\": \"1200\",\n    \"delivery_service_code\": \"standard\",  //remove field if not in use    \n    \"comment\": \"This is a big order\",\n    \"subtotal\": \"10.00\",\n    \"tax\": \"2.00\",\n    \"total\": \"12.00\",\n    \"items\": [\n        {\n            \"supplier_sku_reference\": \"EXERT00001\",\n            \"retailer_sku_reference\": \"RETAILERSKU0001\",\n            \"retailer_additional_reference\": \"Addtional Ref 1\",\n            \"line_reference\": \"123\",\n            \"name\": \"Lenovo IdeaPad 3 14ADA05 14 Inch FHD Laptop - Silver\",\n            \"description\": \"Spot check line item\",\n            \"quantity\": 2,\n            \"unit_cost_price\": \"5.00\",\n            \"subtotal\": \"10.00\",\n            \"tax_rate\": \"20.00\",\n            \"tax\": \"2.00\",\n            \"total\": \"12.00\",\n            \"promised_date\": \"2021-03-20T00:00:00\"\n        }\n    ],\n    \"shipping_address\": {\n        \"full_name\": \"Mr Smith\",\n        \"line_1\": \"London Road\",\n        \"line_2\": \"Flat x\",\n        \"city\": \"Reading\",\n        \"state\": \"Berkshire\",\n        \"postal_code\": \"RG1 XXX\",\n        \"phone\": \"+44 0777 333 222\",\n        \"email\": \"test@virtualstock.com\",\n        \"country\": \"GB\"\n    }\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "https://{{v4-domain}}/restapi/v4/orders/?format=json",
+													"protocol": "https",
+													"host": [
+														"{{v4-domain}}"
+													],
+													"path": [
+														"restapi",
+														"v4",
+														"orders",
+														""
+													],
+													"query": [
+														{
+															"key": "format",
+															"value": "json"
+														}
+													]
+												}
+											},
+											"status": "Created",
+											"code": 201,
+											"_postman_previewlanguage": "json",
+											"header": null,
+											"cookie": [],
+											"body": "{\n    \"supplier\": \"https://{{v4-domain}}/restapi/v4/suppliers/7/\",\n    \"order_reference\": \"RDREST024\",\n    \"order_date\": \"2021-02-23T10:41:59\",\n    \"purchase_order_reference\": \"PO0001\",\n    \"end_user_purchase_order_reference\": \"USER_PO0002\",\n    \"additional_order_reference\": \"aditional_ref001\",\n    \"shipping_store_number\": \"1200\",\n    \"delivery_service_code\": \"standard\",  //remove field if not in use\n    \"comment\": \"This is a big order\",\n    \"test_flag\": false,\n    \"items\": [\n        {\n            \"url\": \"https://{{v4-domain}}/restapi/v4/items/122/\",\n            \"retailer_sku_reference\": \"RETAILERSKU0001\",\n            \"supplier_sku_reference\": \"EXERT00001\",\n            \"line_reference\": \"123\",\n            \"quantity\": 2,\n            \"name\": \"Lenovo IdeaPad 3 14ADA05 14 Inch FHD Laptop - Silver\",\n            \"description\": \"Spot check line item\",\n            \"unit_cost_price\": \"5.00\",\n            \"subtotal\": \"10.00\",\n            \"tax\": \"2.00\",\n            \"tax_rate\": \"20.00\",\n            \"total\": \"12.00\",\n            \"promised_date\": \"2021-03-20T00:00:00\",\n            \"retailer_additional_reference\": \"Addtional Ref 1\"\n        }\n    ],\n    \"currency_code\": \"GBP\",\n    \"subtotal\": \"10.00\",\n    \"tax\": \"2.00\",\n    \"total\": \"12.00\",\n    \"shipping_address\": {\n        \"full_name\": \"Billy Higgins\",\n        \"line_1\": \"London Road\",\n        \"line_2\": \"Flat x\",\n        \"city\": \"Reading\",\n        \"state\": \"Berkshire\",\n        \"postal_code\": \"RG1 XXX\",\n        \"phone\": \"+44 0777 333 222\",\n        \"email\": \"test@virtualstock.com\",\n        \"country\": \"GB\"\n    }\n}"
+										}
+									]
+								},
+								{
+									"name": "Create a debit note",
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json",
+												"name": "Content-Type",
+												"type": "text"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"create_debit_note\": true,\n    \"items\": [\n\t\t{\n    \t  \"part_number\":\"RSKU001\",\n      \t  \"line_ref\": \"1001\",\n      \t  \"quantity\": \"2\",\n          \"reason_code\": \"16\",\n          \"returned_date\": \"2021-04-30 16:00\",\n          \"return_reason\": \"Customer did not want it\",\n          \"rma_reference\": \"RMA001\",\n          \"comments\": \"This is a comment\"\n        },\n        {\n    \t  \"part_number\":\"RSKU002\",\n      \t  \"line_ref\": \"1002\",\n      \t  \"quantity\": \"2\",\n          \"reason_code\": \"16\",\n          \"returned_date\": \"2021-04-30 17:00\",\n          \"return_reason\": \"Customer did not want it\",\n          \"rma_reference\": \"RMA002\",\n          \"comments\": \"This is a comment\"\n        }\n    ]\n}"
+										},
+										"url": {
+											"raw": "{{v4-domain}}/restapi/v4/orders/ORDER_URI/return_requested/?format=json",
+											"host": [
+												"{{v4-domain}}"
+											],
+											"path": [
+												"restapi",
+												"v4",
+												"orders",
+												"ORDER_URI",
+												"return_requested",
+												""
+											],
+											"query": [
+												{
+													"key": "format",
+													"value": "json"
+												}
+											]
+										},
+										"description": "# Attribute Summary\n\n| Field | Required | Field type | Limit | Description | Sample content |\n| --- | --- | --- | --- | --- | --- |\n| create_debit_note | Y | Boolean | 1 | When set to true and your retailer has invoicing enabled this will also create a Debit Note Request | true |\n| part_number | Y | Text | 255 | Unique Product SKU identifier | 1004613 |\n| line_ref | Y | Text | 100 | Retailers unique identifier for the line within and order | 100013292 |\n| quantity | Y | Numeric | None | The quantity being returned | 1 |\n| returned_date | N | DateTime | N/A | The date of the order item is being returned | 2020-01-29 12:00 |\n| rma_reference | N | Text | 255 | Open string for the Return Number from your Supplier | RMA123 |\n| reason_code | Y | Integer | List of Values | Reason category code | 300 |\n| return_reason | N | Text | 100 | A comment regarding the return | No longer wanted |\n| comments | N | Text | 255 | A comment at order level | This is a comment |\n\n# Reason codes\n\n| Reason code | Return Reason |\n| --- | --- |\n| 200 | Faulty |\n| 225 | Damaged product |\n| 250 | Missing items |\n| 275 | Missing components |\n| 300 | No longer wanted |\n| 325 | Product not as expected |\n| 350 | Wrong description on website |\n| 375 | Emergency product withdrawal |\n| 400 | Never delivered |\n| 425 | Problem with other item, returning all items |\n| 450 | Late delivery (not by expected date) |"
+									},
+									"response": [
+										{
+											"name": "Create a debit note",
+											"originalRequest": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json",
+														"name": "Content-Type",
+														"type": "text"
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"create_debit_note\": true,\n    \"items\": [\n\t\t{\n    \t  \"part_number\":\"RSKU001\",\n      \t  \"line_ref\": \"1001\",\n      \t  \"quantity\": \"2\",\n          \"reason_code\": \"16\",\n          \"returned_date\": \"2021-04-30 16:00\",\n          \"return_reason\": \"Customer did not want it\",\n          \"rma_reference\": \"RMA001\",\n          \"comments\": \"This is a comment\"\n        },\n        {\n    \t  \"part_number\":\"RSKU002\",\n      \t  \"line_ref\": \"1002\",\n      \t  \"quantity\": \"2\",\n          \"reason_code\": \"16\",\n          \"returned_date\": \"2021-04-30 17:00\",\n          \"return_reason\": \"Customer did not want it\",\n          \"rma_reference\": \"RMA002\",\n          \"comments\": \"This is a comment\"\n        }\n    ]\n}"
+												},
+												"url": {
+													"raw": "{{v4-domain}}/restapi/v4/orders/ORDER_URI/return_requested/?format=json",
+													"host": [
+														"{{v4-domain}}"
+													],
+													"path": [
+														"restapi",
+														"v4",
+														"orders",
+														"ORDER_URI",
+														"return_requested",
+														""
+													],
+													"query": [
+														{
+															"key": "format",
+															"value": "json"
+														}
+													]
+												}
+											},
+											"_postman_previewlanguage": "Text",
+											"header": null,
+											"cookie": [],
+											"body": "Validation error: Return quantity value 3 is greater than dispatch quantity 0 for order item '123408568'"
+										}
+									]
+								},
+								{
+									"name": "Request a Cancellation",
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json",
+												"name": "Content-Type",
+												"type": "text"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n\"items\": [\n\t\t{\n    \t  \"part_number\":\"PartNumber_01\",\n      \t  \"line_ref\": \"100001\",\n      \t  \"quantity\": \"1\",\n    \t  \"reason_code\":101,\n          \"comment\": \"\"\n        }\n        ]\n}  "
+										},
+										"url": {
+											"raw": "{{v4-domain}}/restapi/v4/orders/ORDER_URI/cancel_request/?format=json",
+											"host": [
+												"{{v4-domain}}"
+											],
+											"path": [
+												"restapi",
+												"v4",
+												"orders",
+												"ORDER_URI",
+												"cancel_request",
+												""
+											],
+											"query": [
+												{
+													"key": "format",
+													"value": "json"
+												}
+											]
+										},
+										"description": "#Introduction\n\nWith this call, you can request a cancellation for any order which is in a status of:\n\n* New Order\n* Processing\n* Backorder\n\nOnce the order has progressed into \"Dispatched\", you will not be able to cancel it, and must go down the route of returning the order.\n\n# Attribute Summary\n\n|Field|Required|Field type|Limit|Description|Sample content|\n|----|----|----|----|----|----|\n|part_number|Y|Text|255|EAN, GTIN or other Product SKU identifier|1004613|\n|line_ref|Y|Text|100|Retailers unique identifier for the line within and order|100013292|\n|quantity|Y|Numeric|None|The ordered quantity|1|\n|reason_code|Y|Numeric|3|Reason code for the cancellation|101|\n|comment|N|Text|255|Additional information that you wish to share with the client|The item was broken|\n\n# Cancellation Reason Codes\n\n|Cancellation Code|Cancellation Reason|\n|---|---|\n|101|Pick Failed|\n|102|Other|\n|126|Customer change of mind - no longer needed|\n|127|Customer changed quantity|\n|128|Customer found cheaper elsewhere|\n|129|Customer address wrong|\n|130|Customer delivery date wrong|\n|131|Orderlate/delayed|\n|132|Want specified delivery time|\n"
+									},
+									"response": []
+								},
+								{
+									"name": "Request a Return",
+									"request": {
+										"auth": {
+											"type": "basic",
+											"basic": [
+												{
+													"key": "username",
+													"value": "argos-manager-jov",
+													"type": "string"
+												},
+												{
+													"key": "password",
+													"value": "argos-manager-jov",
+													"type": "string"
+												},
+												{
+													"key": "showPassword",
+													"value": false,
+													"type": "boolean"
+												}
+											]
+										},
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json",
+												"type": "text"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"order_reference\": \"200000032_100002000001\",\n  \"supplier\": \"{{v4-domain}}/restapi/v4/suppliers/REST_ID/\",\n  \"external_retailer_reference\": \"2098098_987987987987\",\n  \"items\": [\n    {\n      \"line_reference\": \"1001\",\n      \"external_retailer_line_reference\": \"282498886/1\",\n      \"quantity\": \"10\",\n      \"reason_code\": \"300\",\n      \"comment\": \"This is a comment\",\n      \"method\": \"NO_COLLECTION\" // BOOK_COLLECTION, NO_COLLECTION, RETURN_TO_STORE\n    }\n  ],\n  \"collection_address\": { // required if method: book_collection \n        \"full_name\": \"Mr Martin\",\n        \"line_1\": \"London Road\",\n        \"line_2\": \"Flat 2\",\n        \"city\": \"Reading\",\n        \"state\": \"Berkshire 1\",\n        \"postal_code\": \"RG1 XXX\",\n        \"phone\": \"+44 0777 333 222\",\n        \"email\": \"test@virtualstock.com\",\n        \"country\": \"GB\"\n    }\n}\n\n"
+										},
+										"url": {
+											"raw": "{{v4-domain}}/restapi/v4/orders/returns/?format=json",
+											"host": [
+												"{{v4-domain}}"
+											],
+											"path": [
+												"restapi",
+												"v4",
+												"orders",
+												"returns",
+												""
+											],
+											"query": [
+												{
+													"key": "format",
+													"value": "json"
+												}
+											]
+										},
+										"description": "# Attribute Summary\n\n| Field | Required | Field type | Limit | Description | Sample content |\n| --- | --- | --- | --- | --- | --- |\n| order_reference | Y | Text | 255 | The original order number that was previously dispatched and is now being returned | 200000032_100002000001 |\n| supplier | Y | Text | 100 | Supplier unique identifier for retailers | [https://api.sandbox.virtualstock.com/restapi/v4/suppliers/REST_ID/](https://)  <br>  <br>Use the GET suppliers end point to get the REST_ID  <br>/restapi/v4/suppliers/name=SupplierName&format=json |\n| external_retailer_reference | N | Text | None | This is an optional extra order reference that you may have on your systems to identify the return | 2098098_987987987987\" |\n| items | Y |  |  |  |  |\n| line_reference | Y |  |  |  | 1001 |\n| items.external_retailer_line_reference | N |  |  | This is an optional extra line reference that you may have on your systems to identify the return | 282498886/1 |\n| items.quantity | Y | Numeric | None | The ordered quantity | 1 |\n| items.reason_code | Y | Integer | List of values | Reason category code  <br>See the list of reason codes under your Organisation settings > Returns reason codes | 300 |\n| items.comment | N | Text | 255 | A comment at order level | This is a comment |\n| items.method | N | Text |  | The method of return. If passed there are up to three valid values here:  <br>book_collection  <br>no_collection  <br>return_to_store  <br>  <br>note that return_to_store is only valid if the retailer is flagged as allowing return to store | book_collection |\n| collection_address | N |  |  |  |  |\n| collection_address.full_name | N | text |  | If any element of the collection address is passed, the full name must be populated | Joe Bloggs |\n| collection_address.line_1 | N | text |  | If any element of the collection address is passed, the line_1 must be populated | The White Building |\n| collection_address.line_2 | N | text |  |  | 33 Kings Road |\n| collection_address.city | N | text |  |  | Reading |\n| collection_address.state | N | text |  |  | Berkshire |\n| collection_address.postal_code | N | text |  | If any element of the collection address is passed the postal_code must be populated | RG1 3AR |\n| collection_address.phone | N |  |  |  | 07745364783 |\n| collection_address.email | N |  |  |  | joe.bloggs@email.com |\n| collection_address.country | N |  |  | If any element of the collection address is passed the country must be populated | GB |\n\n# Reason codes\n\n| Reason code | Return Reason |\n| --- | --- |\n| 200 | Faulty |\n| 225 | Damaged product |\n| 250 | Missing items |\n| 275 | Missing components |\n| 300 | No longer wanted |\n| 325 | Product not as expected |\n| 350 | Wrong description on website |\n| 375 | Emergency product withdrawal |\n| 400 | Never delivered |\n| 425 | Problem with other item, returning all items |\n| 450 | Late delivery (not by expected date) |"
+									},
+									"response": [
+										{
+											"name": "Request a Return [JSON]",
+											"originalRequest": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json",
+														"type": "text"
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n  \"order_reference\": \"200000032_100002000001\",\n  \"supplier\": \"{{v4-domain}}/restapi/v4/suppliers/REST_ID/\",\n  \"external_retailer_reference\": \"2098098_987987987987\",\n  \"items\": [\n    {\n      \"line_reference\": \"1001\",\n      \"external_retailer_line_reference\": \"282498886/1\",\n      \"quantity\": \"10\",\n      \"reason_code\": \"300\",\n      \"comment\": \"This is a comment\",\n      \"method\": \"NO_COLLECTION\" // BOOK_COLLECTION, NO_COLLECTION, RETURN_TO_STORE\n    }\n  ],\n  \"collection_address\": { // required if method: book_collection \n        \"full_name\": \"Mr Martin\",\n        \"line_1\": \"London Road\",\n        \"line_2\": \"Flat 2\",\n        \"city\": \"Reading\",\n        \"state\": \"Berkshire 1\",\n        \"postal_code\": \"RG1 XXX\",\n        \"phone\": \"+44 0777 333 222\",\n        \"email\": \"test@virtualstock.com\",\n        \"country\": \"GB\"\n    }\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{v4-domain}}/restapi/v4/orders/returns/?format=json",
+													"host": [
+														"{{v4-domain}}"
+													],
+													"path": [
+														"restapi",
+														"v4",
+														"orders",
+														"returns",
+														""
+													],
+													"query": [
+														{
+															"key": "format",
+															"value": "json"
+														}
+													]
+												}
+											},
+											"_postman_previewlanguage": "Text",
+											"header": null,
+											"cookie": [],
+											"body": "Validation error: Return quantity value 3 is greater than dispatch quantity 0 for order item '123408568'"
+										}
+									]
+								},
+								{
+									"name": "Cancel a return",
+									"request": {
+										"method": "POST",
+										"header": [],
+										"url": {
+											"raw": "{{v4-domain}}/restapi/v4/returns/<uuid>/cancel",
+											"host": [
+												"{{v4-domain}}"
+											],
+											"path": [
+												"restapi",
+												"v4",
+												"returns",
+												"<uuid>",
+												"cancel"
+											]
+										},
+										"description": "Use this endpoint to cancel a previously made Return request should your customer change their minds about returning the good, or indeed if there was some mistake on the previous return request.\n\nUse the [List returns](https://api-docs.virtualstock.com/#c19384f8-4644-4a88-83a0-ede689cc3429) endpoint to get the UUID for the return."
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Suppliers",
+							"item": [
+								{
+									"name": "List your Retailers",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{v4-domain}}/restapi/v4/customers/?format=json",
+											"host": [
+												"{{v4-domain}}"
+											],
+											"path": [
+												"restapi",
+												"v4",
+												"customers",
+												""
+											],
+											"query": [
+												{
+													"key": "format",
+													"value": "json"
+												}
+											]
+										}
+									},
+									"response": [
+										{
+											"name": "List your Retailers",
+											"originalRequest": {
+												"method": "GET",
+												"header": [],
+												"url": {
+													"raw": "{{v4-domain}}/restapi/v4/customers/?format=json",
+													"host": [
+														"{{v4-domain}}"
+													],
+													"path": [
+														"restapi",
+														"v4",
+														"customers",
+														""
+													],
+													"query": [
+														{
+															"key": "format",
+															"value": "json"
+														}
+													]
+												}
+											},
+											"_postman_previewlanguage": "json",
+											"header": null,
+											"cookie": [],
+											"body": "{\n    \"count\": 1,\n    \"next\": null,\n    \"previous\": null,\n    \"results\": [\n        {\n            \"url\": \"{{v4-domain}}/restapi/v4/customers/13/?format=json\",\n            \"id\": 13,\n            \"name\": \"Retailer ABC Inc.\"\n        },\n        {\n            \"url\": \"{{v4-domain}}/restapi/v4/customers/13/?format=json\",\n            \"id\": 13,\n            \"name\": \"Retailer DEF Limited\"\n        }\n    ]\n}"
+										}
+									]
+								},
+								{
+									"name": "List Orders",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{v4-domain}}/restapi/v4/orders/?format=json",
+											"host": [
+												"{{v4-domain}}"
+											],
+											"path": [
+												"restapi",
+												"v4",
+												"orders",
+												""
+											],
+											"query": [
+												{
+													"key": "format",
+													"value": "json"
+												}
+											]
+										},
+										"description": "To fetch orders using the **limit** and **offset** parameters to scroll through pages of results links to each order URL.\n\n\"next\": \"https://www.sandbox.the-edge.io/restapi/v4/orders?limit=10&offset=10\"\n\n\"previous\": \"https://wwww.sandbox.the-edge.io/restapi/v4/orders?limit=10\"\n\nAcquire a full list of orders.\n\nIn order to use these, you simply add the modifier after \"/orders/?\". If you wish to change these, you can use \"&\" between each modifier.\n\nYou can use additional modifiers which allow you to increase or decrease, or filter the list provided.\n\n\n\n| parameter | description | example |\n| --------- | ----------- | ------- |\n| supplier_id | Filter orders by supplier unique identifier | &supplier_id=1 |\n| retailer_id | Filter orders by retailer unique identifier | &retailer_id=1 |\n| order_reference | Filter orders by order reference | &order_reference=xxx |\n| part_number | Filter orders that contain products with unique identifier | &part_number=SKU001 | \n| status | Filter orders by its status | &status=ORDER. See the list of statuses to filter by |\n\n\n| Status Key  | Name on the UI |\n| --------- | ----------- |\n| ORDER | New Order |\n| ORDER_ACK | Processing |\n| BACKORDER | Item(s) on Back Order |\n| DISPATCH | Dispatched |\n| CANCEL | Cancellation Requested |\n| CANCEL_ACK | Cancellation Acknowledged |\n| RMA|New Return |\n| RMA_ACK| Return Processing |\n| RMA_REC | Return Approved |\n| RMA_EXC | Return Exception |\n| RMA_REJ | Return Rejected |"
+									},
+									"response": [
+										{
+											"name": "List Orders",
+											"originalRequest": {
+												"method": "GET",
+												"header": [],
+												"url": {
+													"raw": "{{v4-domain}}/restapi/v4/orders/?format=json",
+													"host": [
+														"{{v4-domain}}"
+													],
+													"path": [
+														"restapi",
+														"v4",
+														"orders",
+														""
+													],
+													"query": [
+														{
+															"key": "format",
+															"value": "json"
+														}
+													]
+												}
+											},
+											"_postman_previewlanguage": "json",
+											"header": null,
+											"cookie": [],
+											"body": "{\n    \"count\": 1,\n    \"next\": \"{{v4-domain}}/restapi/v4/orders?format=json&limit=X&offset=X\",\n    \"previous\": null,\n    \"results\": [\n        {\n            \"url\": \"{{v4-domain}}/restapi/v4/orders/259313/\",\n            \"retailer\": \"{{v4-domain}}/restapi/v4/customers/13/\",\n            \"order_reference\": \"TESTORDERNUMBER\",\n            \"order_date\": \"2021-02-23T10:41:59\",\n            \"status\": \"ORDER_ACK\",\n            \"purchase_order_reference\": \"PO0001\",\n            \"end_user_purchase_order_reference\": \"USER_PO0002\",\n            \"additional_order_reference\": \"aditional_ref001\",\n            \"comment\": \"This is a big order\",\n            \"channel\": \"B2B\", // optional and only populated if in use by the retailer\n            \"test_flag\": false,\n            \"supplier\": \"{{v4-domain}}/restapi/v4/suppliers/1569/\",\n            \"items\": [\n                {\n                    \"url\": \"{{v4-domain}}/restapi/v4/items/279610/\",\n                    \"part_number\": \"RETAILERSKU0001\",\n                    \"retailer_sku_reference\": \"RETAILERSKU0001\",\n                    \"supplier_sku_reference\": \"EXERT00001\",\n                    \"line_reference\": \"123\",\n                    \"quantity\": 2,\n                    \"name\": \"Lenovo IdeaPad 3 14ADA05 14 Inch FHD Laptop - Silver\",\n                    \"description\": \"Spot check line item\",\n                    \"status\": \"ORDER_ACK\",\n                    \"unit_cost_price\": \"5.00\",\n                    \"subtotal\": \"10.00\",\n                    \"tax\": \"2.00\",\n                    \"tax_rate\": \"20.00\",\n                    \"total\": \"12.00\",\n                    \"promised_date\": \"2021-03-20T00:00:00\",\n                    \"retailer_additional_reference\": \"Addtional Ref 1\"\n                }\n            ],\n            \"currency_code\": \"GBP\",\n            \"subtotal\": \"10.00\",\n            \"tax\": \"2.00\",\n            \"total\": \"12.00\",\n            \"shipping_address\": {\n                \"country\": \"GB\",\n                \"line_1\": \"London Road\",\n                \"line_2\": \"Flat x\",\n                \"city\": \"Reading\",\n                \"postal_code\": \"RG1 XXX\",\n                \"state\": \"Berkshire\",\n                \"phone\": \"+44 088 333 222\",\n                \"full_name\": \"Ben DeSilva\",\n                \"email\": \"test@test.com\"\n            }\n        }\n    ]\n}"
+										}
+									]
+								},
+								{
+									"name": "View Order details",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{v4-domain}}/restapi/v4/orders/ORDER_URI/?format=json",
+											"host": [
+												"{{v4-domain}}"
+											],
+											"path": [
+												"restapi",
+												"v4",
+												"orders",
+												"ORDER_URI",
+												""
+											],
+											"query": [
+												{
+													"key": "format",
+													"value": "json"
+												}
+											]
+										},
+										"description": "This call allows you to retrieve information for a specific order, once you already know the Restful ID. This restful ID can be acquired via the \"Retrieve Orders\" call, or cached whenever you call the \"Create an order\" for generating any new order\n\nIn order to successfully post a message, you will need to replace \"ORDER_URI\" with the value that you wish to search for."
+									},
+									"response": []
+								},
+								{
+									"name": "List carriers",
+									"protocolProfileBehavior": {
+										"disableBodyPruning": true
+									},
+									"request": {
+										"method": "GET",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "[\n    {\n        \"id\": 144,\n        \"slug\": \"2go\",\n        \"name\": \"2GO\"\n    },\n    {\n        \"id\": 30,\n        \"slug\": \"4px\",\n        \"name\": \"4PX\"\n    }\n]",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{v4-domain}}/restapi/v4/order-tracking-carriers/?format=json",
+											"host": [
+												"{{v4-domain}}"
+											],
+											"path": [
+												"restapi",
+												"v4",
+												"order-tracking-carriers",
+												""
+											],
+											"query": [
+												{
+													"key": "format",
+													"value": "json"
+												}
+											]
+										},
+										"description": "This endpoint will return all available carriers on our platform. Please note, as a supplier you may have been restricted to the carriers you use most. This is simply a list of all of them which helps you provide the correct information to us when calling our APIs"
+									},
+									"response": [
+										{
+											"name": "List carriers",
+											"originalRequest": {
+												"method": "GET",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "[\n    {\n        \"id\": 144,\n        \"slug\": \"2go\",\n        \"name\": \"2GO\"\n    },\n    {\n        \"id\": 30,\n        \"slug\": \"4px\",\n        \"name\": \"4PX\"\n    }\n]",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{v4-domain}}/restapi/v4/order-tracking-carriers/?format=json",
+													"host": [
+														"{{v4-domain}}"
+													],
+													"path": [
+														"restapi",
+														"v4",
+														"order-tracking-carriers",
+														""
+													],
+													"query": [
+														{
+															"key": "format",
+															"value": "json"
+														}
+													]
+												}
+											},
+											"_postman_previewlanguage": "Text",
+											"header": null,
+											"cookie": [],
+											"body": "[\n    {\n        \"id\": 144,\n        \"slug\": \"2go\",\n        \"name\": \"2GO\"\n    },\n    {\n        \"id\": 30,\n        \"slug\": \"4px\",\n        \"name\": \"4PX\"\n    }\n]"
+										}
+									]
+								},
+								{
+									"name": "Acknowledge an order",
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json",
+												"name": "Content-Type",
+												"type": "text"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n\"items\":\n\t[\n\t{\n\t\"part_number\": \"PartNumber_02\",\n\t\"line_ref\": \"100002\",\n\t\"quantity\": 5,\n\t\"sub_status\": \"Pending\",\n\t\"supplier_dispatch_date\": \"2019-10-10T12:00:00\",\n\t\"supplier_delivery_date\":\"2019-10-10T12:00:00\",\n\t\"comment\": \"Line acknowledged\"\n\t},\n\t{\n\t\"part_number\": \"PartNumber_01\",\n\t\"line_ref\": \"100001\",\n\t\"quantity\": 40,\n\t\"sub_status\": \"ASN Received\",\n\t\"supplier_dispatch_date\": \"2019-10-10T12:00:00\",\n\t\"supplier_delivery_date\":\"2019-10-10T12:00:00\",\n\t\"comment\": \"ASN received for line\"\n\t}\n\t]\n}\n"
+										},
+										"url": {
+											"raw": "{{v4-domain}}/restapi/v4/orders/ORDER_URI/acknowledge/?format=json",
+											"host": [
+												"{{v4-domain}}"
+											],
+											"path": [
+												"restapi",
+												"v4",
+												"orders",
+												"ORDER_URI",
+												"acknowledge",
+												""
+											],
+											"query": [
+												{
+													"key": "format",
+													"value": "json"
+												}
+											]
+										},
+										"description": "# Introduction\n\nThis call will allow you to acknowledge an order. The purpose of this is to allow suppliers to acknowledge orders in an automated fashion, however it can be used by retail users, should they wish to acknowledge on behalf of their suppliers (with prior consent), or if they are fulfilling their own orders (e.g., sending orders to their own warehouse)\n\n# Attribute Summary\n\n| Field | Required | Field type | Limit | Description | Sample content |\n| --- | --- | --- | --- | --- | --- |\n| part_number | Y | Text | 255 | EAN, GTIN or other Product SKU identifier | 1004613 |\n| line_ref | Y | Text | 100 | Retailers unique identifier for the line within and order | 100013292 |\n| quantity | Y | Numeric | None | The ordered quantity | 1 |\n| sub_status | N | Text | 100 | Sub-Statuses are based on the clients requirements, they w | Pending |\n|  |  |  |  | ill be a static list |  |\n| supplier_dispatch_date | N | DateTime | 19 | Date of the expected Supplier Dispatch Date | 2018-07-12T08:00:00 |\n| supplier_delivery_date | N | DateTime | 19 | Date of the expected Supplier Delivery Date | 2018-07-12T08:00:00 |\n| comment | N | Text | 255 | Additional information that you wish to share with the client. | Item may require fitting |\n| fulfillment_route | CM | Text | 255 | This is a list of values specific to each retailer.See the retailers appendix document for the values you need to provide. **Note** not all retailers use this field | e.g \"Direct to customer\". Refer to your Retailers configured values if they require fulfillment routes when acknowledging orders|"
+									},
+									"response": []
+								},
+								{
+									"name": "Backorder an order",
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json",
+												"name": "Content-Type",
+												"type": "text"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n\"items\":\n\t[\n\t{\n\t\"part_number\": \"PartNumber_02\",\n\t\"line_ref\": \"100002\",\n\t\"quantity\": 10,\n\t\"sub_status\": \"Pending\",\n\t\"supplier_dispatch_date\": \"2019-10-20T12:00:00\",\n\t\"supplier_delivery_date\": \"2019-10-23T12:00:00\",\n\t\"comment\": \"Line set to backorder\"\n\t},\n\t{\n\t\"part_number\": \"PartNumber_01\",\n\t\"line_ref\": \"100001\",\n\t\"quantity\": 40,\n\t\"sub_status\": \"Pending\",\n\t\"supplier_dispatch_date\": \"2019-10-10T12:00:00\",\n\t\"supplier_delivery_date\":\"2019-10-10T12:00:00\",\n\t\"comment\": \"Line set to backorder\"\n\t}\n\t]\n}\n"
+										},
+										"url": {
+											"raw": "{{v4-domain}}/restapi/v4/orders/ORDER_URI/backorder/?format=json",
+											"host": [
+												"{{v4-domain}}"
+											],
+											"path": [
+												"restapi",
+												"v4",
+												"orders",
+												"ORDER_URI",
+												"backorder",
+												""
+											],
+											"query": [
+												{
+													"key": "format",
+													"value": "json"
+												}
+											]
+										},
+										"description": "# Introduction\n\nThis call will allow you to back-order an order. The purpose of this is to allow suppliers to acknowledge orders in an automated fashion, however it can be used by retail users, should they wish to acknowledge on behalf of their suppliers (with prior consent), or if they are fulfilling their own orders (e.g., sending orders to their own warehouse)\n\n# Attribute Summary\n\n|Field|Required|Field type|Limit|Description|Sample content|\n|----|----|----|----|----|----|\n|part_number|Y|Text|255|EAN, GTIN or other Product SKU identifier|1004613|\n|line_ref|Y|Text|100|Retailers unique identifier for the line within and order|100013292|\n|quantity|Y|Numeric|None|The ordered quantity|1|\n|sub_status|Y|Text|100|Sub-Statuses are based on the clients requirements, they will be a static list|Pending|\n|supplier_dispatch_date|Y|DateTime|19|Date of the expected Supplier Dispatch Date|2018-07-12T08:00:00|\n|supplier_delivery_date|Y/N|DateTime|19|Mandatory for some retailers, The Date of the expected Supplier Delivery Date|2018-07-12T08:00:00|\n|fulfillment_route|N/Y|Text|255|Note: not all retailers require this field, remove it from the payload if they do not. If they do you'll need to contact our support desk for a list of values to provide for each retailer|Direct to customer|\n|comment|N|Text|255|Additional information that you wish to share with the client|Item may require fitting.Note some retailers do not support comments|"
+									},
+									"response": []
+								},
+								{
+									"name": "Acknowledge a Cancellation",
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json",
+												"name": "Content-Type",
+												"type": "text"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n\t\"items\":\n\t[\n\t\t{\n\t\t\t\"part_number\": \"PartNumber_02\",\n\t\t\t\"line_ref\": \"100002\",\n\t\t\t\"quantity\": 10,\n\t\t\t\"comment\": \"I accept\"\n\t\t},\n\t\t{\n\t\t\t\"part_number\": \"PartNumber_01\",\n\t\t\t\"line_ref\": \"100001\",\n\t\t\t\"quantity\": 5,\n\t\t\t\"comment\": \"I accept but i'm not happy about it\"\t\t\t\n\t\t}\n\t]\n}"
+										},
+										"url": {
+											"raw": "{{v4-domain}}/restapi/v4/orders/ORDER_URI/cancel_acknowledge/?format=json",
+											"host": [
+												"{{v4-domain}}"
+											],
+											"path": [
+												"restapi",
+												"v4",
+												"orders",
+												"ORDER_URI",
+												"cancel_acknowledge",
+												""
+											],
+											"query": [
+												{
+													"key": "format",
+													"value": "json"
+												}
+											]
+										},
+										"description": "# Introduction\n\nThis call will allow you to acknowledge a cancellation for an order. The purpose of this is to allow suppliers to acknowledge orders in an automated fashion, however it can be used by retail users, should they wish to acknowledge on behalf of their suppliers (with prior consent), or if they are fulfilling their own orders (e.g., sending orders to their own warehouse)\n\n# Attribute Summary\n\n| Field | Required | Field type | Limit | Description | Sample content |\n| --- | --- | --- | --- | --- | --- |\n| part_number | Y | Text | 255 | EAN, GTIN or other Product SKU identifier | 1004613 |\n| line_ref | Y | Text | 100 | Retailers unique identifier for the line within and order | 100013292 |\n| quantity | Y | Numeric | None | The ordered quantity | 1 |\n| comment | N | Text | 255 | Additional information that you wish to share with the client | Item may require fitting |"
+									},
+									"response": []
+								},
+								{
+									"name": "Dispatch an order",
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json",
+												"name": "Content-Type",
+												"type": "text"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n\t\"items\":\n\t[\n\t\t{\n\t\t\t\"part_number\": \"PartNumber_02\",\n\t\t\t\"line_ref\": \"100002\",\n\t\t\t\"quantity\": 10,\n\t\t\t\"supplier_dispatch_date\": \"2019-10-10\",\n\t\t\t\"supplier_delivery_date\": \"2019-10-12\",\n\t\t\t\"tracking_number\": 1123581321,\n\t\t\t\"carrier\": \"Fedex\"\n\t\t},\n\t\t{\n\t\t\t\"part_number\": \"PartNumber_01\",\n\t\t\t\"line_ref\": \"100001\",\n\t\t\t\"quantity\": 5,\n\t\t\t\"supplier_dispatch_date\": \"2019-10-10\",\n\t\t\t\"supplier_delivery_date\": \"2019-10-12\",\n\t\t\t\"tracking_number\": 22481220,\n\t\t\t\"carrier\": \"Royal Mail\"\t\n\t\t}\n\t]\n}"
+										},
+										"url": {
+											"raw": "{{v4-domain}}/restapi/v4/orders/ORDER_URI/dispatch/?format=json",
+											"host": [
+												"{{v4-domain}}"
+											],
+											"path": [
+												"restapi",
+												"v4",
+												"orders",
+												"ORDER_URI",
+												"dispatch",
+												""
+											],
+											"query": [
+												{
+													"key": "format",
+													"value": "json"
+												}
+											]
+										},
+										"description": "# Introduction\n\nThis call will allow you to Dispatch an order. The purpose of this is to allow suppliers to acknowledge orders in an automated fashion, however it can be used by retail users, should they wish to dispatch on behalf of their suppliers (with prior consent), or if they are fulfilling their own orders (e.g., sending orders to their own warehouse)\n\n# Attribute Summary\n\n| Field | Required | Field type | Limit | Description | Sample content |\n| --- | --- | --- | --- | --- | --- |\n| part_number | Y | Text | 255 | EAN, GTIN or other Product SKU identifier | 1004613 |\n| line_ref | Y | Text | 100 | Retailers unique identifier for the line within and order | 100013292 |\n| quantity | Y | Numeric | None | The ordered quantity | 1 |\n| carrier | Y | Text | 255 | The carrier \"slug\" as listed on Virtualstock. e.g if the Carrier is DPD then the \"slug\" is \"dpd\" | dpd  <br>  <br>(ask your support team for the list of \"slug\" values for your carriers) |\n| supplier_dispatch_date | Y | Date | 10 | Date of the expected Supplier Dispatch Date | 43293 |\n| tracking_number | Y | Text | 100 | Tracking Number for the carrier selected | 34098675738421 |\n| tracking_url | N | Text | 255 | Tracking URL associated to the carrier selected | [https://track.dhlparcel.co.uk/](https://track.dhlparcel.co.uk/) |"
+									},
+									"response": []
+								},
+								{
+									"name": "Acknowledge a Return",
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json",
+												"name": "Content-Type",
+												"type": "text"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{       \n\t\"items\": [\n                {\n                    \"part_number\": \"PartNumber_01\",\n                    \"line_ref\": \"10001\",\n                    \"quantity\": \"2\",\n                }\n            ]\n}"
+										},
+										"url": {
+											"raw": "{{v4-domain}}/restapi/v4/orders/ORDER_URI/return_acknowledge/?format=json",
+											"host": [
+												"{{v4-domain}}"
+											],
+											"path": [
+												"restapi",
+												"v4",
+												"orders",
+												"ORDER_URI",
+												"return_acknowledge",
+												""
+											],
+											"query": [
+												{
+													"key": "format",
+													"value": "json"
+												}
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Create an Invoice",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"type": "text/javascript",
+												"exec": [
+													"const jsonData = pm.response.json();",
+													"pm.test(\"Test data type of the response\", () => {",
+													"  //pm.expect(jsonData).to.be.an(\"object\");",
+													"  //pm.expect(jsonData.name).to.be.a(\"string\");",
+													"  pm.expect(jsonData.invoice_date).to.be.a(\"date\");",
+													"  //pm.expect(jsonData.hobbies).to.be.an(\"array\");",
+													"  //pm.expect(jsonData.website).to.be.undefined;",
+													"  //pm.expect(jsonData.email).to.be.null;",
+													"});"
+												]
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"retailer_id\": \"a9f66013-6cac-427b-9f6e-aa5f27ba02e8\",\n    \"retailer_order_reference\": \"PO000012\",\n    \"invoice_date\": \"2021-04-30\",\n    \"invoice_number\": \"I12477247642\",\n    \"currency_code\": \"GBP\",\n    \"lines\": [\n        {\n            \"retailer_sku\": \"RET8768768\",\n            \"supplier_sku\": \"SUP987987\",\n            \"order_line_reference\": \"1\",\n            \"description\": \"Lenovo IdeaPad 3 14ADA05 14 Inch FHD Laptop - Silver\",\n            \"quantity\": 2,\n            \"unit_price\": \"5.00\",\n            \"subtotal\": \"10.00\",\n            \"supply_date\": \"2021-04-30\",\n            \"discount\": \"0.00\",\n            \"tax_rate\": \"20.00\",\n            \"tax\": \"2.00\"\n        }\n    ]\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{v4-domain}}/api/v4/invoices/?format=json",
+											"host": [
+												"{{v4-domain}}"
+											],
+											"path": [
+												"api",
+												"v4",
+												"invoices",
+												""
+											],
+											"query": [
+												{
+													"key": "format",
+													"value": "json"
+												}
+											]
+										},
+										"description": "## Introduction\n\nYou can only submit one invoice per order, and the order you are creating an invoice for needs to have all order lines in either a cancelled or dispatched status.\n\nBelow is a summary of the fields you provide in the request to create an invoice.\n\n_**NOTE:**_ If your retailer has **rejected** an invoice for this order, i.e they have not approved the discrepancies between the original order and your invoice, you can submit a new invoice for the same order with a new invoice number and your previously rejected invoice will be automatically **withdrawn** and your new invoice created for approval at the same time.\n\n## Fields summary\n\n| Field name | Data Type | Required | Description | Example |\n| --- | --- | --- | --- | --- |\n| retailer_id | Text (36) | Y | The retailer unique identifier. You can get this by viewing your connected Retailers profile underneath Organisation settings, Retailers | 01ba44c4-ad80-4b9d-90c5-17beb8547668 |\n| retailer_order_reference | Text (255) | Y | The order number that uniquely identifies the order for retailer | ORD001 |\n| invoice_date | Date | Y | The Invoice Date. ISO 8691, YYYY-MM-DD | 2018-06-16 |\n| invoice_number | Text (20) | Y | The Invoice Number | INV001 |\n| currency_code | Text (3) | Y | The currency of the Invoice | true |\n| lines.retailer_sku | Text (100) | Y | The Retailers SKU reference for the item being invoiced | BUYER_SKU001 |\n| lines.supplier_sku | Text (100) | Y | The Suppliers SKU reference for the item being invoiced | SELLER_SKU001 |\n| lines.order_line_reference | Text (100) | Y | Unique order line reference | 1,2,3,etc... |\n| lines.description | Text (100) | Y | SKU name | Mac Mini |\n| lines.quantity | Integer | Y | The quantity being invoiced | 2 |\n| lines.supply_date | Date | Y | The date the goods were Dispatched to the customer.ISO 8691, YYYY-MM-DD | 2018-06-16 |\n| lines.unit_price | Decimal (2) | Y | The unit price being invoiced | 10.00 |\n| lines.subtotal | Decimal (2) | Y | The subtotal, unit_price & quantity of the invoiced line | 20.00 |\n| lines.tax_rate | Decimal (2) | Y | The tax rate of the invoiced line | 20.00 |\n| lines.tax | Decimal (2) | Y | The tax rate of the invoiced line | 2.00 |\n\n_**NOTE:**_ While subtotal, and tax are mandatory fields, Virtualstock will actually calculate these based on the quantity, unit price and tax rate supplied rather that than the values you provide. They only exist for backwards compatibility.\n\n## Errors summary\n\n| Error Code | Description |\n| --- | --- |\n| ORDER_ALREADY_INVOICED | Order has already been invoiced |\n| ORDER_NOT_FOUND | Order could not be found |\n| ORDER_NOT_FULFILLED | Order is not ready to be invoiced yet. Order is not ready to be invoiced yet. All Items must be dispatched or cancelled first |\n| INVOICE_LINES_NOT_PRESENT | Invoice must have at least one line. |\n| DUPLICATED_INVOICE_NUMBER | An invoice with the same number already exists. |\n| INVOICE_DATE_BEFORE_LAST_ITEM_DISPATCHED_DATE | Invoice date must be equal to or greater than the last dispatched item date. |\n| RETAILER_NOT_FOUND | Retailer could not be found with provided identifier. |\n| RETAILER_IS_NOT_PARTNER | Can only create invoices for retailers that you're connected with. |\n| RETAILER_DOES_NOT_SUPPORT_INVOICING | Retailer organisation does not support invoicing. |\n| RETAILER_ORGANISATION_TAX_CODE_MISSING | Retailer organisation tax code is not set on Virtualstock. Please contact them to set it by editing their organisation profile. |\n| SUPPLIER_ORGANISATION_TAX_CODE_MISSING | Supplier organisation tax code is not set on Virtualstock. Please set it by editing the organisation profile. |\n| RETAILER_SKU_NOT_FOUND | The Retailer SKU you have provided does not match any of the lines on the order |\n| ORDER_CANCELLED | The order which you are trying to invoice has been cancelled and you are not able to create invoices for cancelled orders |\n| ORDER_LINE_REFERENCE_NOT_FOUND | The order line reference provided does not match any Order line. |\n| ORDER_LINE_CANCELLED | The line on the order that you are trying to invoice has been cancelled and you are not able to invoice for cancelled lines. |\n| UNEXPECTED_ERROR | An error that is not handled specifically by Virtualstock and should be investigated to address and document it |\n| INVOICE_HAS_BEEN_ISSUED | An error that you will receive if you have void_existing_invoice_on_create set to true, but the previous invoice has already been issued and can not be set to Withdrawn |\n| ORDER_LINE_UNMATCHED_QUANTITY | The line on the order that you are trying to invoice does not have the same quantity and you are not able to invoice such lines. |\n\n#### Why am I getting the following error?\n\n`{ \"detail\": \"Method \\\"POST\\\" not allowed.\"}`\n\nCheck that you have a forward slash at the end of your URL\n\n[https://www.sandbox.the-edge.io/api/v4/invoices](https://www.sandbox.the-edge.io/api/v4/invoices) -- INCORRECT  \n[https://www.sandbox.the-edge.io/api/v4/invoices/](https://www.sandbox.the-edge.io/api/v4/invoices/) -- CORRECT"
+									},
+									"response": [
+										{
+											"name": "Create an Invoice",
+											"originalRequest": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"retailer_id\":\"a9f66013-6cac-427b-9f6e-aa5f27ba02e8\",\n    \"retailer_order_reference\": \"PO000012\",\n    \"invoice_date\": \"2021-04-30\",\n    \"invoice_number\": \"I12477247642\",\n    \"currency_code\": \"GBP\",\n    \"lines\": [\n        {\n            \"retailer_sku\": \"RET8768768\",\n            \"supplier_sku\": \"SUP987987\",\n            \"order_line_reference\": \"1\",\n            \"description\": \"Lenovo IdeaPad 3 14ADA05 14 Inch FHD Laptop - Silver\",\n            \"quantity\": 2,\n            \"unit_price\": \"5.00\",\n            \"subtotal\": \"10.00\",\n            \"supply_date\": \"2021-04-30\",\n            \"discount\": \"0.00\",\n            \"tax_rate\": \"20.00\",\n            \"tax\": \"2.00\"\n        }\n    ]\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{v4-domain}}/api/v4/invoices/?format=json",
+													"host": [
+														"{{v4-domain}}"
+													],
+													"path": [
+														"api",
+														"v4",
+														"invoices",
+														""
+													],
+													"query": [
+														{
+															"key": "format",
+															"value": "json"
+														}
+													]
+												}
+											},
+											"_postman_previewlanguage": "Text",
+											"header": null,
+											"cookie": [],
+											"body": null
+										}
+									]
+								},
+								{
+									"name": "List Returns",
+									"protocolProfileBehavior": {
+										"disableBodyPruning": true
+									},
+									"request": {
+										"method": "GET",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{v4-domain}}/restapi/v4/returns/&format=json",
+											"host": [
+												"{{v4-domain}}"
+											],
+											"path": [
+												"restapi",
+												"v4",
+												"returns",
+												"&format=json"
+											]
+										},
+										"description": "The parameters available are:\n\n```\n?page=1&offset=0&limit=15\n&supplier_uuid=a8d85658-c168-4991-821d-38ccd9386521\n&return_approve_reason=351\n&return_reject_reason=321\n&return_reason=335\n&return_status=RMA_REJ\n&sla_violation=return_time_to_authorise\n&item_reference=sdsfsd\n&order_reference=897987987987\n&return_amount=partially\n&from_date=2024-06-19\n&to_date=2024-06-19\n&from_date_complete=2024-06-19\n&to_date_complete=2024-06-19\n\n ```"
+									},
+									"response": [
+										{
+											"name": "List Returns",
+											"originalRequest": {
+												"method": "GET",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{v4-domain}}/restapi/v4/returns/&format=json",
+													"host": [
+														"{{v4-domain}}"
+													],
+													"path": [
+														"restapi",
+														"v4",
+														"returns",
+														"&format=json"
+													]
+												}
+											},
+											"_postman_previewlanguage": "json",
+											"header": [
+												{
+													"key": "Content-Type",
+													"value": "application/json",
+													"name": "Content-Type",
+													"description": "",
+													"type": "text"
+												}
+											],
+											"cookie": [],
+											"body": "{\n    \"count\": 1,\n    \"next\": null,\n    \"previous\": null,\n    \"results\": [\n        {\n            \"id\": \"6dc60007-8f4b-458a-8802-6f1d21a8fbc7\",\n            \"quantity\": 1,\n            \"order\": {\n                \"url\": \"https://www.sandbox.the-edge.io/restapi/v4/orders/234419/\",\n                \"retailer\": \"https://www.sandbox.the-edge.io/restapi/v4/customers/224/\",\n                \"order_reference\": \"200300-2021-01-02\",\n                \"order_date\": \"2021-02-01T00:00:00\",\n                \"status\": \"RMA_REC\",\n                \"purchase_order_reference\": null,\n                \"end_user_purchase_order_reference\": \"47190100\",\n                \"additional_order_reference\": \"0038\",\n                \"comment\": null,\n                \"test_flag\": false,\n                \"supplier\": \"https://www.sandbox.the-edge.io/restapi/v4/suppliers/210/\",\n                \"items\": [\n                    {\n                        \"url\": \"https://www.sandbox.the-edge.io/restapi/v4/items/247427/\",\n                        \"part_number\": \"66682708\",\n                        \"retailer_sku_reference\": \"6254354307031\",\n                        \"supplier_sku_reference\": null,\n                        \"line_reference\": \"1\",\n                        \"quantity\": 2,\n                        \"name\": null,\n                        \"description\": \"JL LUX TE BASE BK LIFT 210\",\n                        \"status\": \"RMA_REC\",\n                        \"unit_cost_price\": null,\n                        \"subtotal\": null,\n                        \"tax\": null,\n                        \"tax_rate\": null,\n                        \"total\": null,\n                        \"promised_date\": \"2021-02-05T00:00:00\",\n                        \"retailer_additional_reference\": null\n                    }\n                ],\n                \"currency_code\": \"GBP\",\n                \"subtotal\": null,\n                \"tax\": null,\n                \"total\": null,\n                \"shipping_address\": {\n                    \"country\": \"United Kingdom\",\n                    \"line_1\": \"Order placed Branch\",\n                    \"line_2\": \"\",\n                    \"city\": null,\n                    \"postal_code\": \"\",\n                    \"state\": null,\n                    \"phone\": null,\n                    \"full_name\": \"Order placed Branch\",\n                    \"email\": null\n                },\n                \"retailer_data\": {\n                    \"uuid\": \"213b5935-cfc6-4055-b1e1-a88807322355\",\n                    \"name\": \"Retailer name\",\n                    \"email\": \"\",\n                    \"phone\": \"\",\n                    \"tax_code\": \"\",\n                    \"address\": {\n                        \"line_1\": \"\",\n                        \"line_2\": \"\",\n                        \"city\": \"\",\n                        \"state\": \"\",\n                        \"country\": \"GB\",\n                        \"postal_code\": \"\"\n                    }\n                },\n                \"delivery_service_code\": null\n            },\n            \"order_item\": {\n                \"url\": \"https://www.sandbox.the-edge.io/restapi/v4/items/247427/\",\n                \"part_number\": \"66682708\",\n                \"retailer_sku_reference\": \"6254354307031\",\n                \"supplier_sku_reference\": null,\n                \"line_reference\": \"1\",\n                \"quantity\": 2,\n                \"name\": null,\n                \"description\": \"JL LUX TE BASE BK LIFT 210\",\n                \"status\": \"RMA_REC\",\n                \"unit_cost_price\": null,\n                \"subtotal\": null,\n                \"tax\": null,\n                \"tax_rate\": null,\n                \"total\": null,\n                \"promised_date\": null,\n                \"retailer_additional_reference\": null\n            },\n            \"return_reason\": {\n                \"id\": \"2d755932-6feb-40bd-ae6b-e974be981980\",\n                \"code\": \"250\",\n                \"description\": \"Missing items\",\n                \"is_enabled\": true,\n                \"created_at\": \"2022-06-13T09:35:52.701216\"\n            },\n            \"return_reason_code\": \"250\",\n            \"status\": {\n                \"code\": \"RMA_REC\",\n                \"description\": \"Return Approved\"\n            },\n            \"return_date\": \"2021-02-01 13:47:40\",\n            \"requested_at\": null,\n            \"requested_message\": null,\n            \"authorised_at\": null,\n            \"authorised_message\": null,\n            \"declined_at\": null,\n            \"declined_message\": null,\n            \"rejected_at\": null,\n            \"rejected_message\": null,\n            \"approved_at\": \"2021-02-01 13:47:40\",\n            \"created_at\": \"2022-06-13 09:42:27\",\n            \"supplier\": {\n                \"name\": \"Supplier Name\"\n            },\n            \"retailer\": {\n                \"name\": \"Retailer name\"\n            },\n            \"return_approved\": {\n                \"code\": \"300\",\n                \"description\": \"Agreed return\",\n                \"created_at\": \"2022-06-13T09:36:04.923484\"\n            },\n            \"return_rejected\": null,\n            \"return_approved_amount\": null,\n            \"return_approved_amount_status\": null,\n            \"return_authorised_collection_date\": null\n        }\n    ]\n}"
+										}
+									]
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "V3",
+					"item": [
+						{
+							"name": "List Suppliers",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{v4-domain}}/restapi/v3/suppliers/?format=json",
+									"host": [
+										"{{v4-domain}}"
+									],
+									"path": [
+										"restapi",
+										"v3",
+										"suppliers",
+										""
+									],
+									"query": [
+										{
+											"key": "format",
+											"value": "json"
+										}
+									]
+								},
+								"description": "This call allows you to retrieve a list of all suppliers for the client that you're associated to."
+							},
+							"response": []
+						},
+						{
+							"name": "List Order Information",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{v4-domain}}/restapi/v2/orders/ORDER_URI/?format=json",
+									"host": [
+										"{{v4-domain}}"
+									],
+									"path": [
+										"restapi",
+										"v2",
+										"orders",
+										"ORDER_URI",
+										""
+									],
+									"query": [
+										{
+											"key": "format",
+											"value": "json"
+										}
+									]
+								},
+								"description": "This call allows you to retrieve information for a specific order, once you already know the Restful ID. This restful ID can be acquired via the \"Retrieve Orders\" call, or cached whenever you call the \"Create an order\" for generating any new order\n\nIn order to successfully post a message, you will need to replace \"ORDER_URI\" with the value that you wish to search for."
+							},
+							"response": []
+						},
+						{
+							"name": "View Supplier Details",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{v4-domain}}/restapi/v3/suppliers/SUPPLIER_URI/?format=json",
+									"host": [
+										"{{v4-domain}}"
+									],
+									"path": [
+										"restapi",
+										"v3",
+										"suppliers",
+										"SUPPLIER_URI",
+										""
+									],
+									"query": [
+										{
+											"key": "format",
+											"value": "json"
+										}
+									]
+								},
+								"description": "This call allows you to retrieve information for a specific supplier, once you already know the Restful ID. This restful ID can be acquired via the \"Retrieve Suppliers\" call.\n\nIn order to successfully post a message, you will need to replace \"SUPPLIER_URI\" with the value that you wish to search for."
+							},
+							"response": []
+						},
+						{
+							"name": "List Orders",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{v4-domain}}/restapi/v3/orders/?format=json",
+									"host": [
+										"{{v4-domain}}"
+									],
+									"path": [
+										"restapi",
+										"v3",
+										"orders",
+										""
+									],
+									"query": [
+										{
+											"key": "format",
+											"value": "json"
+										}
+									]
+								},
+								"description": "To fetch orders user the **limit** and **offset** parameters to scroll through pages of results links to each order URL.\n\n\"next\": \"[https://oms.sandbox.the-edge.io/restapi/v3/orders?limit=10&offset=10\"](https://oms.sandbox.the-edge.io/restapi/v3/orders?limit=10&offset=10)\n\n\"previous\": \"[https://oms.sandbox.the-edge.io/restapi/v3/orders?limit=10\"](https://oms.sandbox.the-edge.io/restapi/v3/orders?limit=10)\n\nAcquire a full list of orders for the retailer, which have been generated over the past 3 days.\n\nIn order to use these, you simply add the modifier after \"/orders/?\". If you wish to change these, you can use \"&\" between each modifier.\n\n> **NOTE:** For performance reasons, we do not return more than 3 days of results. `ord_days` should only be used if you are testing your integration and need to fetch new orders that are more than 3 days old. In production, you do NOT need to use `ord_days` but instead, fetch and process new orders every hour\n\nWhen testing your integration you can use additional modifiers which allow you to increase or decrease, or filter the list provided:\n\n*   if `ord_days` is not set it will default to 2 days\n*   if `ord_days` and `chg_days` are both set, only `chg_days` is usedif `ord_days` is set:  \n    Orders will be filtered by order creation date  \n    The \"from date\" will be the current time minus number of specified `ord_days`  \n    The \"to date\" will be 73 hours greater than \"from date\"  \n    i.e you can only list a maximum of 73 hours of orders,  \n    but you can iterate through incrementing `ord_days`if `chg_days` is set:  \n    Orders will be filtered by order modified date  \n    The \"from date\" will be the current time minus number of specified chg_days  \n    The \"to date\" will be 73 hours greater than \"from date\"  \n    i.e you can only list a maximum of 73 hours of orders,  \n    but you can iterate through incrementing `chg_days`\n*   `status`: Allows you to filter your results by a particular order status. \"status=new\", for newly created orders, for example\n    \n\n| Status | Description |\n| --- | --- |\n| new | Orders in a status of New |\n| order_ack | Orders in a status of Processing |\n| cancel | Orders in a status of Cancellation Requested |\n| cancel_ack | Orders in a status of Cancellation Acknowledged |\n| return | Orders in a status of Return Requested |\n| return_ack | Orders in a status of Return Acknowledged |"
+							},
+							"response": []
+						},
+						{
+							"name": "Create an order",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"name": "Content-Type",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n\"supplier\": \"{{v4-domain}}/restapi/v3/suppliers/SUPPLIER_RESTFUL_ID/\",\n\"order_number\": \"608490239\",\n\"order_date\": \"2019-10-07T15:32:05\",\n\"invoice_title\": \"Mr\",\n\"invoice_full_name\": \"Inv Full Name\",\n\"invoice_address_1\": \"Inv Address 1\",\n\"invoice_address_2\": \"Inv Address 2\",\n\"invoice_address_3\": \"Inv Address 3\",\n\"invoice_postcode\": \"Inv Postcode\",\n\"invoice_country\": \"Inv Country\",\n\"invoice_phone\": \"Inv Phone\",\n\"invoice_email\": \"InvEmail@email.com\",\n\"shipments\": [\n {\n \"shipping_title\": \"Mr\",\n \"shipping_full_name\": \"Ship Full Name\",\n \"shipping_address_1\": \"Ship Address 1\",\n \"shipping_address_2\": \"Ship Address 2\",\n \"shipping_address_3\": \"Ship Address 3\",\n \"shipping_postcode\": \"Ship Postcode\",\n \"shipping_country\": \"Ship Country\",\n \"shipping_phone\": \"Ship Phone\",\n \"shipping_email\": \"ShipPhone@email.com\",\n \"shipping\": \"10.00\",\n \"total_price\": \"50.00\",\n \"expected_delivery_date\": \"2019-10-20T00:00:00\",\n \"items\": [\n     {\n     \"part_number\": \"5397007210323\",\n     \"line_ref\": \"00001\",\n     \"quantity\": 1,\n     \"name\": \"C&L AFFINI BACK TO WALL TOILE\",\n     \"description\": \"Toilet\",\n     \"retailer_ref\": \"Retailer Ref 1\",\n     \"supplier_ref\": \"Supplier Ref 1\",\n     \"additional_ref\": \"Addtional Ref 1\",\n     \"cost\": \"5.00\",\n     \"shipping\": \"1.00\",\n     \"sub_total\": \"6.00\",\n     \"tax\": \"0.50\",\n     \"total\": \"6.50\",\n     \"promised_date\": \"2019-10-20T00:00:00\"\n     }\n ]\n }\n]\n}\n"
+								},
+								"url": {
+									"raw": "{{v4-domain}}/restapi/v3.1/orders/?format=json",
+									"host": [
+										"{{v4-domain}}"
+									],
+									"path": [
+										"restapi",
+										"v3.1",
+										"orders",
+										""
+									],
+									"query": [
+										{
+											"key": "format",
+											"value": "json"
+										}
+									]
+								},
+								"description": "# Introduction\n\nWith this call, you can generate a brand new order, and associate it to your supplier. The example request contains every possible field you could use in the sample request.\n\nNOTE: this endpoint has 3.1. If you wish to use the attribute item.additional_ref that maps this additional field to the suppliers SFTP API integration.\n\n# Attribute Summary\n\n| Field | Required | Field type | Limit | Description | Sample content |\n| --- | --- | --- | --- | --- | --- |\n| supplier | Y | Text | 100 | Supplier ID (link) | [https://domain/restapi/v2/suppliers/nnn/](https://domain/restapi/v2/suppliers/nnn/) where nnn is unique Supplier REST ID |\n| order_number | Y | Text | 100 | Unique identifier for the order | TEST-180711145243 |\n| order_date | Y | Date | 20 | The date of the order | 2018-07-11T14:52:43 |\n| customer_ref | N | Text | 100 | End customers reference number, supplied by the retailer | ENDUSER-180711145343 |\n| retailer_ref | N | Text | 100 | An additional reference that the retailer may wish to provide | CHANNEL-180711145343 |\n| supplier_ref | N | Text | 100 | Supplier unique reference for the order | SUPPLIER-180711145343 |\n| invoice_title | N | Text | 100 | The title of the ordering customer | Mr, Miss, Mrs |\n| invoice_full_name | N | Text | 100 | The full name of the ordering customer | Sarah Smith |\n| invoice_address_1 | N | Text | 255 | First line of the address of the ordering customer | Penny Royal Road |\n| invoice_address_2 | N | Text | 100 | Second line of the address of the ordering customer | Danbury |\n| invoice_address_3 | N | Text | 100 | Third line of the address of the ordering customer | Chelmsford |\n| invoice_postcode | N | Text | 100 | Postcode of the ordering customer | SK12 |\n| invoice_country | N | Text | 100 | Country of the ordering customer | GB |\n| invoice_phone | N | Text | 100 | Phone number of the ordering customer | 1793707666 |\n| invoice_email | N | Text | 75 | Email address of the ordering customer | [john@orderingcustomer.com](mailto:john@orderingcustomer.com) |\n| comments | N | Text | 255 | Free text field - text visible in Comments & Order History | Comment to the order |\n| test_flag | N | Boolean | N/A | Flag to indicate this as a test order | True - for a test order |\n| shipping_title | N | Text | 100 | The title of the destination customer | Mr, Miss, Mrs |\n| shipping_full_name | Y | Text | 100 | The full name of the destination customer | Peter Radshore |\n| shipping_address_1 | Y | Text | 255 | First line of the address of the destination customer | Penny Royal Road |\n| shipping_address_2 | N | Text | 100 | Second line of the address of the destination customer | Danbury |\n| shipping_address_3 | N | Text | 100 | Third line of the address of the destination customer | Chelmsford |\n| shipping_postcode | Y | Text | 100 | Postcode of the destination customer | LS28 |\n| shipping_country | Y | Text | 100 | Country of the destination customer | GB |\n| shipping_phone | N | Text | 100 | Phone number of of the destination customer | 1793707686 |\n| shipping_email | N | Text | 75 | Email address of the destination customer | [peter@testing.com](mailto:peter@testing.com) |\n| carrier_name | N | Text | 100 | Carrier slug value. | dpd |\n| carrier_service | N | Text | 100 | Carrier service name (10 characters for Order item split) | Next day |\n| shipping | N | Decimal | 14 Digits 2 Decimals | Shipping cost charged to the end customer by the retailer | 5 |\n| total_price | N | Decimal | 14 Digits 2 Decimals | Total price | 150 |\n| expected_delivery_date | N | Date | 10 | Date of the expected delivery | 2018-07-12T08:00:00 |\n| items | node | node | Node | node | No data required |\n| part_number | Y | Text | 255 | EAN, GTIN or other Product SKU identifier | 1004613 |\n| line_ref | Y | Text | 100 | Retailers unique identifier for the line within and order | 100013292 |\n| quantity | Y | Numeric | None | The ordered quantity | 1 |\n| name | Y | Text | 255 | Name of the order item | The test widget 3892 |\n| description | N | Text | 255 | Description of the order item | Test widget |\n| retailer_ref | N | Text | 100 | An additional retailer reference that the retailer may wish to provide | RET1004613 |\n| additional_ref | N | Text | 100 | An additional item reference that the retailer may wish to provide. NOTE this one maps to the supplier SFTP API in integration. retailer_ref does not | ADD1004613 |\n| cost | N | Decimal | 14 Digits 2 Decimals | The cost price of the item | 69 |\n| shipping | N | Decimal | 14 Digits 2 Decimals | Shipping cost charged to the end customer by the retailer | 5 |\n| sub_total | N | Decimal | 14 Digits 2 Decimals | Subtotal of the order line | 150 |\n| tax | N | Decimal | 14 Digits 2 Decimals | VAT of the order line | 28 |\n| total | N | Decimal | 14 Digits 2 Decimals | Total order line price (sub_total + tax) | 178 |\n| promised_date | N | Date | 20 | Promise date of the order line. Should be populated in order to track supplier compliance. | 2018-07-14T08:00:00 |\n\n# End to end mapping between the REST API, User interface and the Supplier SFTP API\n\n| REST API field | The UI on Virtualstock | Supplier SFTP API on Virtualstock V6 | Example data |\n| --- | --- | --- | --- |\n| order_number | Supplier Order Number: | order_number | Y100009263 |\n| order_date | Purchase Date: | order_date | Apr 16, 2021 9:01:33 |\n| customer_ref | End User PO Number: | po_enduser | 254155338 |\n| retailer_ref | Channel Order Reference: | retailer_ref | 20210416100202486721080 |\n| shipping_title | To: | shipping_title | Mr |\n| shipping_full_name | To: | shipping_full_name | Andrew Williams |\n| shipping_address_1 | Address 1: | shipping_address_1 | Number 1 |\n| shipping_address_2 | Address 2: | shipping_address_2 | Victoria Street |\n| shipping_address_3 | Address 3: | shipping_address_3 | London |\n| shipping_postcode | Postcode: | shipping_postcode | SW1E DFR |\n| shipping_country | Country: | shipping_country | GB |\n| shipping_phone | Mobile Phone No.: | shipping_phone | 98098098 |\n| shipping_email | Email: | shipping_email | [test@gmail.com](mailto:test@gmail.com) |\n| expected_delivery_date | Expected Delivery Date: | expected_delivery_date | April 21, 2021 |\n| items | \\-- | \\-- | \\-- |\n| part_number | Item SKU | part_number | 58000128 |\n| additional_ref | ...more Additional Reference | additional_ref | ADD00128 |\n| line_ref, | ...more Line Ref | line_ref | 1 |\n| quantity | Qty | quantity | 1 |\n| name: | description | description | Jo Malone London Myrrh & Tonka Cologne Intense, 100ml |\n| promised_date: \"2021-04-21T09:23:00\" | Promise Date | promised_date | 2021-04-21T09:23:00 |"
+							},
+							"response": [
+								{
+									"name": "Create an order",
+									"originalRequest": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json",
+												"name": "Content-Type",
+												"type": "text"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n\"supplier\": \"https://oms.the-edge.io/restapi/v3/suppliers/SUPPLIER_RESTFUL_ID/\",\n\"order_number\": \"608490239\",\n\"order_date\": \"2019-10-07T15:32:05\",\n\"invoice_title\": \"Mr\",\n\"invoice_full_name\": \"Inv Full Name\",\n\"invoice_address_1\": \"Inv Address 1\",\n\"invoice_address_2\": \"Inv Address 2\",\n\"invoice_address_3\": \"Inv Address 3\",\n\"invoice_postcode\": \"Inv Postcode\",\n\"invoice_country\": \"Inv Country\",\n\"invoice_phone\": \"Inv Phone\",\n\"invoice_email\": \"InvEmail@email.com\",\n\"shipments\": [\n {\n \"shipping_title\": \"Mr\",\n \"shipping_full_name\": \"Ship Full Name\",\n \"shipping_address_1\": \"Ship Address 1\",\n \"shipping_address_2\": \"Ship Address 2\",\n \"shipping_address_3\": \"Ship Address 3\",\n \"shipping_postcode\": \"Ship Postcode\",\n \"shipping_country\": \"Ship Country\",\n \"shipping_phone\": \"Ship Phone\",\n \"shipping_email\": \"ShipPhone@email.com\",\n \"shipping\": \"10.00\",\n \"total_price\": \"50.00\",\n \"expected_delivery_date\": \"2019-10-20T00:00:00\",\n \"items\": [\n     {\n     \"part_number\": \"5397007210323\",\n     \"line_ref\": \"00001\",\n     \"quantity\": 1,\n     \"name\": \"C&L AFFINI BACK TO WALL TOILE\",\n     \"description\": \"Toilet\",\n     \"retailer_ref\": \"Retailer Ref 1\",\n     \"supplier_ref\": \"Supplier Ref 1\",\n     \"additional_ref\": \"Addtional Ref 1\",\n     \"cost\": \"5.00\",\n     \"shipping\": \"1.00\",\n     \"sub_total\": \"6.00\",\n     \"tax\": \"0.50\",\n     \"total\": \"6.50\",\n     \"promised_date\": \"2019-10-20T00:00:00\"\n     }\n ]\n }\n]\n}\n"
+										},
+										"url": {
+											"raw": "https://oms.the-edge.io/restapi/v3.1/orders/?format=json",
+											"protocol": "https",
+											"host": [
+												"oms",
+												"the-edge",
+												"io"
+											],
+											"path": [
+												"restapi",
+												"v3.1",
+												"orders",
+												""
+											],
+											"query": [
+												{
+													"key": "format",
+													"value": "json"
+												}
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": null,
+									"cookie": [],
+									"body": "{\n    \"url\": \"https://oms.sandbox.the-edge.io/restapi/v3/orders/189785/\",\n    \"retailer\": \"https://oms.sandbox.the-edge.io/restapi/v3/customers/203/\",\n    \"retailer_name\": \"MyCompanyName\",\n    \"supplier\": \"https://oms.sandbox.the-edge.io/restapi/v3/suppliers/2540/\",\n    \"supplier_name\": \"Supplier Name\",\n    \"order_number\": \"222555000_100000600003\",\n    \"order_date\": \"2020-09-02T13:30:02\",\n    \"customer_ref\": \"123453/1\",\n    \"retailer_ref\": null,\n    \"supplier_ref\": null,\n    \"invoice_title\": \"Mr\",\n    \"invoice_full_name\": null,\n    \"invoice_address_1\": null,\n    \"invoice_address_2\": null,\n    \"invoice_address_3\": null,\n    \"invoice_postcode\": null,\n    \"invoice_country\": null,\n    \"invoice_phone\": null,\n    \"invoice_email\": null,\n    \"test_flag\": false,\n    \"current_status\": \"New Order\",\n    \"shipments\": [\n        {\n            \"url\": \"https://oms.sandbox.the-edge.io/restapi/v3/orders/9999999/shipments/1/\",\n            \"shipment_id\": null,\n            \"shipping_title\": \"Mr\",\n            \"shipping_full_name\": \"B Jones\",\n            \"shipping_address_1\": \"123 The Road\",\n            \"shipping_address_2\": \"The Town\",\n            \"shipping_address_3\": \"Reading\",\n            \"shipping_postcode\": \"RG1 1AR\",\n            \"shipping_country\": \"UK\",\n            \"shipping_phone\": \"0123456789\",\n            \"shipping_email\": \"test@gmail.com\",\n            \"carrier_name\": null,\n            \"carrier_service\": null,\n            \"shipping\": null,\n            \"total_price\": null,\n            \"giftwrap\": false,\n            \"signature\": false,\n            \"expected_delivery_date\": null,\n            \"dispatch_date\": null,\n            \"tracking_number\": null,\n            \"tracking_url\": null,\n            \"current_status\": \"New Order\",\n            \"items\": [\n                {\n                    \"url\": \"https://oms.sandbox.the-edge.io/restapi/v3/items/9999999/\",\n                    \"part_number\": \"1234567\",\n                    \"line_ref\": \"1\",\n                    \"quantity\": 1,\n                    \"name\": null,\n                    \"description\": \"Widget1\",\n                    \"retailer_ref\": null,\n                    \"additional_ref\": null,\n                    \"supplier_ref\": null,\n                    \"cost\": null,\n                    \"shipping\": null,\n                    \"sub_total\": null,\n                    \"tax\": null,\n                    \"total\": null,\n                    \"current_status\": \"New Order\",\n                    \"dispatch_status\": null,\n                    \"dispatch_date\": null,\n                    \"delivery_date\": null,\n                    \"tracking_number\": \"\",\n                    \"tracking_url\": \"\",\n                    \"cancel_date\": null,\n                    \"cancel_reason\": null,\n                    \"cancel_quantity\": null,\n                    \"return_date\": null,\n                    \"return_code\": null,\n                    \"return_reason\": null,\n                    \"return_quantity\": null,\n                    \"promised_date\": \"2020-09-07T13:30:02\"\n                }\n            ],\n            \"shipping_address_type\": \"\"\n        }\n    ],\n    \"account_id\": \"SBG001\",\n    \"order_channel\": null\n}"
+								}
+							]
+						},
+						{
+							"name": "Acknowledge an order",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"name": "Content-Type",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n\"items\":\n\t[\n\t{\n\t\"part_number\": \"PartNumber_02\",\n\t\"line_ref\": \"100002\",\n\t\"quantity\": 5,\n\t\"sub_status\": \"Pending\",\n\t\"supplier_dispatch_date\": \"2019-10-10T12:00:00\",\n\t\"supplier_delivery_date\":\"2019-10-10T12:00:00\",\n\t\"comment\": \"Line acknowledged\"\n\t},\n\t{\n\t\"part_number\": \"PartNumber_01\",\n\t\"line_ref\": \"100001\",\n\t\"quantity\": 40,\n\t\"sub_status\": \"ASN Received\",\n\t\"supplier_dispatch_date\": \"2019-10-10T12:00:00\",\n\t\"supplier_delivery_date\":\"2019-10-10T12:00:00\",\n\t\"comment\": \"ASN received for line\"\n\t}\n\t]\n}\n"
+								},
+								"url": {
+									"raw": "{{v4-domain}}/api/v3/orders/ORDER_URI/acknowledge/?format=json",
+									"host": [
+										"{{v4-domain}}"
+									],
+									"path": [
+										"api",
+										"v3",
+										"orders",
+										"ORDER_URI",
+										"acknowledge",
+										""
+									],
+									"query": [
+										{
+											"key": "format",
+											"value": "json"
+										}
+									]
+								},
+								"description": "# Introduction\n\nThis call will allow you to acknowledge an order. The purpose of this is to allow suppliers to acknowledge orders in an automated fashion, however it can be used by retail users, should they wish to acknowledge on behalf of their suppliers (with prior consent), or if they are fulfilling their own orders (e.g., sending orders to their own warehouse)\n\n# Attribute Summary\n\n| Field | Required | Field type | Limit | Description | Sample content |\n| --- | --- | --- | --- | --- | --- |\n| part_number | Y | Text | 255 | EAN, GTIN or other Product SKU identifier | 1004613 |\n| line_ref | Y | Text | 100 | Retailers unique identifier for the line within and order | 100013292 |\n| quantity | Y | Numeric | None | The ordered quantity | 1 |\n| sub_status | N | Text | 100 | Sub-Statuses are based on the clients requirements, they w | Pending |\n|  |  |  |  | ill be a static list |  |\n| supplier_dispatch_date | N | DateTime | 19 | Date of the expected Supplier Dispatch Date | 2018-07-12T08:00:00 |\n| supplier_delivery_date | N | DateTime | 19 | Date of the expected Supplier Delivery Date | 2018-07-12T08:00:00 |\n| comment | CM | Text | 255 | Additional information that you wish to share with the client. | Item may require fitting |"
+							},
+							"response": []
+						},
+						{
+							"name": "Backorder an order",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"name": "Content-Type",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n\"items\":\n\t[\n\t{\n\t\"part_number\": \"PartNumber_02\",\n\t\"line_ref\": \"100002\",\n\t\"quantity\": 10,\n\t\"sub_status\": \"Pending\",\n\t\"expected_dispatch_date\": \"2019-10-20T12:00:00\",\n\t\"supplier_dispatch_date\": \"2019-10-20T12:00:00\",\n\t\"supplier_delivery_date\": \"2019-10-23T12:00:00\",\n\t\"comment\": \"Line set to backorder\"\n\t},\n\t{\n\t\"part_number\": \"PartNumber_01\",\n\t\"line_ref\": \"100001\",\n\t\"quantity\": 40,\n\t\"sub_status\": \"Pending\",\n\t\"supplier_dispatch_date\": \"2019-10-10T12:00:00\",\n\t\"supplier_delivery_date\":\"2019-10-10T12:00:00\",\n\t\"comment\": \"Line set to backorder\"\n\t}\n\t]\n}\n"
+								},
+								"url": {
+									"raw": "{{v4-domain}}/api/v3/orders/ORDER_URI/backorder/?format=json",
+									"host": [
+										"{{v4-domain}}"
+									],
+									"path": [
+										"api",
+										"v3",
+										"orders",
+										"ORDER_URI",
+										"backorder",
+										""
+									],
+									"query": [
+										{
+											"key": "format",
+											"value": "json"
+										}
+									]
+								},
+								"description": "# Introduction\n\nThis call will allow you to back-order an order. The purpose of this is to allow suppliers to acknowledge orders in an automated fashion, however it can be used by retail users, should they wish to acknowledge on behalf of their suppliers (with prior consent), or if they are fulfilling their own orders (e.g., sending orders to their own warehouse)\n\n# Attribute Summary\n\n|Field|Required|Field type|Limit|Description|Sample content|\n|----|----|----|----|----|----|\n|part_number|Y|Text|255|EAN, GTIN or other Product SKU identifier|1004613|\n|line_ref|Y|Text|100|Retailers unique identifier for the line within and order|100013292|\n|quantity|Y|Numeric|None|The ordered quantity|1|\n|sub_status|Y|Text|100|Sub-Statuses are based on the clients requirements, they w|Pending|\n|||||ill be a static list||\n|supplier_dispatch_date|Y|DateTime|19|Date of the expected Supplier Dispatch Date|2018-07-12T08:00:00|\n|supplier_delivery_date|Y|DateTime|19|Date of the expected Supplier Delivery Date|2018-07-12T08:00:00|\n|comment|N|Text|255|Additional information that you wish to share with the client|Item may require fitting|"
+							},
+							"response": []
+						},
+						{
+							"name": "Dispatch an order",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"name": "Content-Type",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n\t\"items\":\n\t[\n\t\t{\n\t\t\t\"part_number\": \"PartNumber_02\",\n\t\t\t\"line_ref\": \"100002\",\n\t\t\t\"quantity\": 10,\n\t\t\t\"supplier_dispatch_date\": \"2019-10-10\",\n\t\t\t\"supplier_delivery_date\": \"2019-10-12\",\n\t\t\t\"tracking_number\": 1123581321,\n\t\t\t\"carrier\": \"Fedex\"\n\t\t},\n\t\t{\n\t\t\t\"part_number\": \"PartNumber_01\",\n\t\t\t\"line_ref\": \"100001\",\n\t\t\t\"quantity\": 5,\n\t\t\t\"supplier_dispatch_date\": \"2019-10-10\",\n\t\t\t\"supplier_delivery_date\": \"2019-10-12\",\n\t\t\t\"tracking_number\": 22481220,\n\t\t\t\"carrier\": \"Royal Mail\"\t\n\t\t}\n\t]\n}"
+								},
+								"url": {
+									"raw": "{{v4-domain}}/api/v3/orders/ORDER_URI/dispatch/?format=json",
+									"host": [
+										"{{v4-domain}}"
+									],
+									"path": [
+										"api",
+										"v3",
+										"orders",
+										"ORDER_URI",
+										"dispatch",
+										""
+									],
+									"query": [
+										{
+											"key": "format",
+											"value": "json"
+										}
+									]
+								},
+								"description": "# Introduction\n\nThis call will allow you to Dispatch an order. The purpose of this is to allow suppliers to acknowledge orders in an automated fashion, however it can be used by retail users, should they wish to dispatch on behalf of their suppliers (with prior consent), or if they are fulfilling their own orders (e.g., sending orders to their own warehouse)\n\n# Attribute Summary\n\n| Field | Required | Field type | Limit | Description | Sample content |\n| --- | --- | --- | --- | --- | --- |\n| part_number | Y | Text | 255 | EAN, GTIN or other Product SKU identifier | 1004613 |\n| line_ref | Y | Text | 100 | Retailers unique identifier for the line within and order | 100013292 |\n| quantity | Y | Numeric | None | The ordered quantity | 1 |\n| carrier | Y | Text | 255 | Carrier slug value | dpd |\n| supplier_dispatch_date | Y | Date | 10 | Date of the expected Supplier Dispatch Date | 43293 |\n| tracking_number | Y | Text | 100 | Tracking Number for the carrier selected | 34098675738421 |\n| tracking_url | N | Text | 255 | Tracking URL associated to the carrier selected | [https://track.dhlparcel.co.uk/](https://track.dhlparcel.co.uk/) |"
+							},
+							"response": []
+						},
+						{
+							"name": "Request a Cancellation",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"name": "Content-Type",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n\"items\": [\n\t\t{\n    \t  \"part_number\":\"PartNumber_01\",\n      \t  \"line_ref\": \"100001\",\n      \t  \"quantity\": \"1\",\n    \t  \"reason_code\":101\n          \"comment\": \"\"\n        }\n        ]\n}  "
+								},
+								"url": {
+									"raw": "{{v4-domain}}/api/v3/orders/ORDER_URI/cancel_request/?format=json",
+									"host": [
+										"{{v4-domain}}"
+									],
+									"path": [
+										"api",
+										"v3",
+										"orders",
+										"ORDER_URI",
+										"cancel_request",
+										""
+									],
+									"query": [
+										{
+											"key": "format",
+											"value": "json"
+										}
+									]
+								},
+								"description": "#Introduction\n\nWith this call, you can request a cancellation for any order which is in a status of:\n\n- New Order\n- Processing\n- Backorder\n    \n\nOnce the order has progressed into \"Dispatched\", you will not be able to cancel it, and must go down the route of returning the order.\n\n# Attribute Summary\n\n| Field | Required | Field type | Limit | Description | Sample content |\n| --- | --- | --- | --- | --- | --- |\n| part_number | Y | Text | 255 | EAN, GTIN or other Product SKU identifier | 1004613 |\n| line_ref | Y | Text | 100 | Retailers unique identifier for the line within and order | 100013292 |\n| quantity | Y | Numeric | None | The ordered quantity | 1 |\n| reason_code | Y | Numeric | 3 | Reason code for the cancellation | 101 |\n| comment | N | Text | 255 | Additional information that you wish to share with the client | The item was broken |\n\n# Cancellation Reason Codes\n\n| Cancellation Code | Cancellation Reason |\n| --- | --- |\n| 101 | Pick Failed |\n| 102 | Other |\n| 126 | Customer change of mind - no longer needed |\n| 127 | Customer changed quantity |\n| 128 | Customer found cheaper elsewhere |\n| 129 | Customer address wrong |\n| 130 | Customer delivery date wrong |\n| 131 | Order late/delayed |\n| 132 | Want specified delivery time |\n\n**NOTE:** Your request to cancel may fail for the following reasons, and you should programmatically handle these scenarios to feedback to your users that the cancellation was not successful.\n\n- 400 Bad request / Validation error: Partial cancellation not allowed item 2\"\n    \n- 400 Bad request / Validation error: Cancel quantity value can't be less or equal zero\n    \n- 400 Bad request / Validation error: Cancel quantity value 2 is bigger than allowed for item\n    \n- 400 Bad request / Validation Not allowed to change state of item 1 from DISPATCH to CANCEL\n    \n- 500 Service not available. (Try again when the service is back up)"
+							},
+							"response": []
+						},
+						{
+							"name": "Acknowledge a Cancellation",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"name": "Content-Type",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n\t\"items\":\n\t[\n\t\t{\n\t\t\t\"part_number\": \"PartNumber_02\",\n\t\t\t\"line_ref\": \"100002\",\n\t\t\t\"quantity\": 10,\n\t\t\t\"comment\": \"I accept\"\n\t\t},\n\t\t{\n\t\t\t\"part_number\": \"PartNumber_01\",\n\t\t\t\"line_ref\": \"100001\",\n\t\t\t\"quantity\": 5,\n\t\t\t\"comment\": \"I accept but i'm not happy about it\"\t\t\t\n\t\t}\n\t]\n}"
+								},
+								"url": {
+									"raw": "{{v4-domain}}/api/v3/orders/ORDER_URI/cancel_acknowledge/?format=json",
+									"host": [
+										"{{v4-domain}}"
+									],
+									"path": [
+										"api",
+										"v3",
+										"orders",
+										"ORDER_URI",
+										"cancel_acknowledge",
+										""
+									],
+									"query": [
+										{
+											"key": "format",
+											"value": "json"
+										}
+									]
+								},
+								"description": "# Introduction\n\nThis call will allow you to acknowledge a cancellation for an order. The purpose of this is to allow suppliers to acknowledge orders in an automated fashion, however it can be used by retail users, should they wish to acknowledge on behalf of their suppliers (with prior consent), or if they are fulfilling their own orders (e.g., sending orders to their own warehouse)\n\n# Attribute Summary\n\n| Field | Required | Field type | Limit | Description | Sample content |\n| --- | --- | --- | --- | --- | --- |\n| part_number | Y | Text | 255 | EAN, GTIN or other Product SKU identifier | 1004613 |\n| line_ref | Y | Text | 100 | Retailers unique identifier for the line within and order | 100013292 |\n| quantity | Y | Numeric | None | The ordered quantity | 1 |\n| comment | N | Text | 255 | Additional information that you wish to share with the client | Item may require fitting |"
+							},
+							"response": []
+						},
+						{
+							"name": "Request a Return",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"name": "Content-Type",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{            \n\t\"items\": [\n                {\n                    \"part_number\": \"PartNumber_01\",\n                    \"line_ref\": \"10001\",\n                    \"quantity\": \"2\",\n                    \"returned_date\": \"2020-01-29 12:00\",\n                    \"reason_code\": \"16\",\n                    \"return_reason\": \"Customer did not want it\",\n                    \"comments\": \"This is a comment\",\n                }\n            ] \n}"
+								},
+								"url": {
+									"raw": "{{v4-domain}}/api/v3/orders/ORDER_URI/return_requested/?format=json",
+									"host": [
+										"{{v4-domain}}"
+									],
+									"path": [
+										"api",
+										"v3",
+										"orders",
+										"ORDER_URI",
+										"return_requested",
+										""
+									],
+									"query": [
+										{
+											"key": "format",
+											"value": "json"
+										}
+									]
+								},
+								"description": "# Attribute Summary\n\n|Field|Required|Field type|Limit|Description|Sample content|\n|----|----|----|----|----|----|\n|part_number|Y|Text|255|EAN, GTIN or other Product SKU identifier|1004613|\n|line_ref|Y|Text|100|Retailers unique identifier for the line within and order|100013292|\n|quantity|Y|Numeric|None|The ordered quantity|1|\n|returned_date|Y|DateTime|N/A|The date of the order item is being retunred|2020-01-29 12:00|\n|reason_code|Y|Integer|List of Values|Reason category code|300|\n|return_reason|Y|Text|100|A comment regarding the return|No longer wanted|\n|comments|N|Text|255|A comment at order level|This is a comment|\n\n# Reason codes\n\n|Reason code|Return Reason|\n|----|----|\n|200|Faulty|\n|225|Damaged product|\n|250|Missing items|\n|275|Missing components|\n|300|No longer wanted|\n|325|Product not as expected|\n|350|Wrong description on website|\n|375|Emergency product withdrawal|\n|400|Never delivered|\n|425|Problem with other item, returning all items|\n|450|Late delivery (not by expected date)|\n\n"
+							},
+							"response": [
+								{
+									"name": "Request a Return",
+									"originalRequest": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json",
+												"name": "Content-Type",
+												"type": "text"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{            \n\t\"items\": [\n                {\n                    \"part_number\": \"PartNumber_01\",\n                    \"line_ref\": \"10001\",\n                    \"quantity\": \"2\",\n                    \"returned_date\": \"2020-01-29 12:00\",\n                    \"reason_code\": \"16\",\n                    \"return_reason\": \"Customer did not want it\",\n                    \"comments\": \"This is a comment\"\n                }\n            ] \n}"
+										},
+										"url": {
+											"raw": "https://oms.the-edge.io/api/v3/orders/ORDER_URI/return_requested/?format=json",
+											"protocol": "https",
+											"host": [
+												"oms",
+												"the-edge",
+												"io"
+											],
+											"path": [
+												"api",
+												"v3",
+												"orders",
+												"ORDER_URI",
+												"return_requested",
+												""
+											],
+											"query": [
+												{
+													"key": "format",
+													"value": "json"
+												}
+											]
+										}
+									},
+									"_postman_previewlanguage": "Text",
+									"header": null,
+									"cookie": [],
+									"body": "Validation error: Return quantity value 3 is greater than dispatch quantity 0 for order item '123408568'"
+								}
+							]
+						},
+						{
+							"name": "Acknowledge a Return",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"name": "Content-Type",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{       \n\t\"items\": [\n                {\n                    \"part_number\": \"PartNumber_01\",\n                    \"line_ref\": \"10001\",\n                    \"quantity\": \"2\",\n                }\n            ]\n}"
+								},
+								"url": {
+									"raw": "{{v4-domain}}/api/v3/orders/ORDER_URI/return_acknowledge/?format=json",
+									"host": [
+										"{{v4-domain}}"
+									],
+									"path": [
+										"api",
+										"v3",
+										"orders",
+										"ORDER_URI",
+										"return_acknowledge",
+										""
+									],
+									"query": [
+										{
+											"key": "format",
+											"value": "json"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			],
+			"description": "| Main Order Status | Status Key | Description |\n| --- | --- | --- |\n| New Order | ORDER | Orders that have been sent to the supplier but as yet have not been acknowledged by the Supplier |\n| Processing | ORDER_ACK | Orders the supplier has acknowledged and is actively being processed by the Supplier |\n| Item(s) on Backorder | BACKORDER | Orders that the Supplier can not fulfill by the expected delivery date, and they have provided a new expected delivery date that they will be able to fulfill the order |\n| Cancellation Requested | CANCEL | Orders that the retailer has requested a cancellation for |\n| Cancellation Acknowledged | CANCEL_ACK | Orders that the Supplier has confirmed is now Cancelled |\n| Dispatched | DISPATCH | Orders that have a confirmed delivery date and have been picked up by the Suppliers delivery Service or Carrier |\n| Return Request | RMA | A previously Dispatched order, that has now been initiated as a Return Order |\n| Return Authorised | RMA_AUTHORISED | The supplier has confirmed they will process this return |\n| Return Declined | RMA_REJ | A Returned Order that the Supplier would not be able to process |\n| Return Collection Booked | RMA_COLLECTION_BOOKED | The supplier has booked a collection date with the Courier |\n| Return Approved | RMA_REC | The supplier has received the returned goods and they have approved the items are in a condition that can be refunded |\n| Return Rejected | RMA_EXC | The supplier has received the returned goods but the items are not in a condition that can be refunded |\n\n| Custom Secondary Order Statuses | Description |\n| --- | --- |\n| Processing > Pending | \"Pending\" is just an example, but as a retailer you can configure any custom sub statuses below Processing. Other examples include \"Delivery Booked\",\"Delivery Deferred\", \"Materials ordered\", or anything else that gives the retailer a better view on how the order is progressing |\n| Item(s) on Backorder > Out of Stock | \"Out of Stock\" is just an example, but as a retailer you can configure any custom sub statuses below \"Item(s) on Backorder\". Other examples include \"Information Required\",\"Discontinued\", \"Manufacturing Problem\", or anything else that gives the retailer a better view as to why the order is going to be late |\n\n| Common Workflows |\n| --- |\n| New Order > Processing > Dispatched(Delivered) |\n| New Order > Processing > Item(s) on Backorder > Dispatched(Delivered) |\n| New Order > Processing > Item(s) on Backorder > Cancellation Requested > Cancellation Acknowledged |\n| New Order > Processing > Cancellation Requested > Cancellation Acknowledged |\n| New Order > Processing > Cancellation Requested > Dispatched(Delivered) |\n| \\--- |\n| Dispatched(Delivered) > Return Request > Return Authorised > Return Collection Booked > Return Approved |\n| Dispatched(Delivered) > Return Request > Return Declined |\n| Dispatched(Delivered) > Return Request > Return Authorised > Return Collection Booked > Return Rejected |\n\n| Tracking statuses | Status Key | Description |\n| --- | --- | --- |\n| Pending | PENDING | New shipments added that are pending to track, or new shipments without tracking information available yet. |\n| Info Received | INFORECEIVED | The carrier has received the tracking number and awaits further updates. |\n| In Transit | INTRANSIT | Carrier has accepted or picked up shipment from the shipper. The shipment is on the way. |\n| Out for Delivery | OUTFORDELIVERY | Carrier is about to deliver the shipment, or it is ready to be picked up. |\n| Failed Attempt | FAILEDATTEMPT | Carrier attempted to deliver but failed, and usually leaves a notice and will try to deliver again. |\n| Available For Pickup | AVAILABLEFORPICKUP | The package has arrived at the nearest pickup point and is available for pickup. |\n| Delivery Exception | EXCEPTION | Undelivered or any shipping exceptions. Used by Virtualstock if there was a system failure working with this courier API in some way, or can be set manually by the supplier where required. |\n| Tracking Exception | TRACKINGEXCEPTION | There has not had an update from the Carrier in 48 hours |\n| Delivered | DELIVERED | The shipment was delivered successfully. |\n| Delivered On Time | DELIVEREDONTIME | The shipment was delivered successfully on time. (not always provided by carriers) |\n| Delivered Late | DELIVERELATE | The shipment was delivered successfully but later than expected. (not always provided by carriers) |\n| Untracked | UNTRACKED | There are no further tracking updates |\n\n**NOTE**: The Status Key values can be provided in uppercase or camel case. E.g TRACKINGEXCEPTION or TrackingException\n\n| Custom Secondary Order Statuses | Description |\n| --- | --- |\n| Processing > Pending | \"Pending\" is just an example, but as a retailer you can configure any custom sub statuses below Processing. Other examples include \"Delivery Booked\",\"Delivery Deferred\", \"Materials ordered\", or anything else that gives the retailer a better view on how the order is progressing |\n| Item(s) on Backorder > Out of Stock | \"Out of Stock\" is just an example, but as a retailer you can configure any custom sub statuses below \"Item(s) on Backorder\". Other examples include \"Information Required\",\"Discontinued\", \"Manufacturing Problem\", or anything else that gives the retailer a better view as to why the order is going to be late |\n\n**NOTE** : There are some differences between what the field names are on the REST API vs the User interface and then onward to the event report. [Click here to view a spreedsheet](https://docs.google.com/spreadsheets/d/10RRTbLusqSt1QQQM1yEKc3h54tP6KS04Uc9LahosKUM/edit#gid=2048455756) outlining how each of these field names maps through to the user interface and Event report.\n\n<img src=\"https://content.pstmn.io/23e9e7f1-dd66-478e-b89e-9d7ccb8efcd0/U2NyZWVuc2hvdCAyMDI0LTAyLTI2IGF0IDEzLjQyLjQyLnBuZw==\">",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Supplier management",
+			"item": [
+				{
+					"name": "For orders",
+					"item": [
+						{
+							"name": "List Suppliers for orders",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{v4-domain}}/restapi/v4/suppliers/?format=json",
+									"host": [
+										"{{v4-domain}}"
+									],
+									"path": [
+										"restapi",
+										"v4",
+										"suppliers",
+										""
+									],
+									"query": [
+										{
+											"key": "format",
+											"value": "json"
+										}
+									]
+								},
+								"description": "This call allows you to retrieve a list of all suppliers for the client that you're associated to.\n\nTo fetch supplier using the limit and offset parameters to scroll through pages of results links to each order URL.\n\n\"next\": \"https://{{v4domain}}/restapi/v4/suppliers?limit=10&offset=10\"\n\n\"previous\": \"[https://wwww.sandbox.the-edge.io/restapi/v4/suppliers?limit=10\"](https://wwww.sandbox.the-edge.io/restapi/v4/suppliers?limit=10%22)\n\nYou can filter this endpoint by supplier name. Add the `name` parameter to the url below.\n\n[https://www.sandbox.the-edge.io/restapi/v4/suppliers/?name={SupplierName}?format=json](https://www.sandbox.the-edge.io/restapi/v4/suppliers/?name=%7BSupplierName%7D?format=json)\n\nYou can also filter this endpoint by supplier account ID. Add the `account_id` parameter to the url below. Account IDs are set on suppliers as part of onboarding and are typically the retailers system identifiers.\n\n[https://www.sandbox.the-edge.io/restapi/v4/suppliers/?account_id={AccountID}?format=json](https://www.sandbox.the-edge.io/restapi/v4/suppliers/?account_id=%7BAccountID%7D?format=json)"
+							},
+							"response": [
+								{
+									"name": "List Suppliers for orders",
+									"originalRequest": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json",
+												"type": "text"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"count\": 32,\n    \"next\": \"https://{{v4-domain}}/restapi/v4/suppliers/?format=json&limit=10&offset=10\",\n    \"previous\": null,\n    \"results\": [\n        {\n            \"url\": \"https://{{v4-domain}}/restapi/v4/suppliers/{REST_ID}/?format=json\",\n            \"id\": \"{REST_ID}\",\n            \"name\": \"Suppliers name LTD\",\n            \"account_id\": \"34926\"\n        },\n        {\n            \"url\": \"https://{{v4-domain}}/restapi/v4/suppliers/2613/?format=json\",\n            \"id\": \"{REST_ID}\",\n            \"name\": \"Suppliers name LTD\",\n            \"account_id\": \"34685\"\n        },\n    ]\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "https://{{v4-domain}}/restapi/v4/suppliers/?format=json&limit=2",
+											"protocol": "https",
+											"host": [
+												"{{v4-domain}}"
+											],
+											"path": [
+												"restapi",
+												"v4",
+												"suppliers",
+												""
+											],
+											"query": [
+												{
+													"key": "format",
+													"value": "json"
+												},
+												{
+													"key": "limit",
+													"value": "2"
+												}
+											]
+										}
+									},
+									"_postman_previewlanguage": "Text",
+									"header": null,
+									"cookie": [],
+									"body": null
+								}
+							]
+						},
+						{
+							"name": "View Supplier details",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{v4-domain}}/restapi/v4/suppliers/SUPPLIER_URI/?format=json",
+									"host": [
+										"{{v4-domain}}"
+									],
+									"path": [
+										"restapi",
+										"v4",
+										"suppliers",
+										"SUPPLIER_URI",
+										""
+									],
+									"query": [
+										{
+											"key": "format",
+											"value": "json"
+										}
+									]
+								},
+								"description": "This call allows you to retrieve information for a specific supplier, once you already know the Restful ID. This restful ID can be acquired via the \"List Suppliers for orders\" call.\n\nIn order to successfully post a message, you will need to replace \"SUPPLIER_URI\" with the value that you wish to search for."
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "For products",
+					"item": [
+						{
+							"name": "List Suppliers for products",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{v4-domain}}/api/v4/suppliers/?format=json",
+									"host": [
+										"{{v4-domain}}"
+									],
+									"path": [
+										"api",
+										"v4",
+										"suppliers",
+										""
+									],
+									"query": [
+										{
+											"key": "format",
+											"value": "json"
+										}
+									]
+								},
+								"description": "You can filter this endpoint by supplier name. Add the `name` parameter to the url below.\n\n[https://www.sandbox.the-edge.io/api/v4/suppliers/?name={SupplierName}?format=json](https://www.sandbox.the-edge.io/api/v4/suppliers/?name={SupplierName}?format=json)\n\nYou can also filter this endpoint by supplier account ID. Add the `account_id` parameter to the url below. Account IDs are set on suppliers as part of onboarding and are typically the retailers system identifiers.\n\n[https://www.sandbox.the-edge.io/api/v4/suppliers/?account_id={AccountID}?format=json](https://www.sandbox.the-edge.io/api/v4/suppliers/?name={SupplierName}?format=json)"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Retrieve channels",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{v4-domain}}/api/v4/channels/?format=json",
+							"host": [
+								"{{v4-domain}}"
+							],
+							"path": [
+								"api",
+								"v4",
+								"channels",
+								""
+							],
+							"query": [
+								{
+									"key": "format",
+									"value": "json"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Retrieve a suppliers settings",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{v4-domain}}/api/v4/settings/?format=json",
+							"host": [
+								"{{v4-domain}}"
+							],
+							"path": [
+								"api",
+								"v4",
+								"settings",
+								""
+							],
+							"query": [
+								{
+									"key": "format",
+									"value": "json"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Currently suppliers IDs will differ for the same supplier entity between the Product API and the Orders API endpoints. If you're working across both APIs you will need to do the following:\n\nFrequently update your systems with a GET from both of these end points.\n\nOrder API suppliers  \nGET [https://www.sandbox.the-edge.io/restapi/v4/suppliers/?format=json](https://www.sandbox.the-edge.io/restapi/v4/suppliers/?format=json)\n\nProduct API suppliers  \nGET [https://www.sandbox.the-edge.io/api/v4/suppliers/?format=json](https://www.sandbox.the-edge.io/api/v4/suppliers/?format=json)\n\nUse the results to store a local lookup database with values for\n\n\"Supplier name\" | \"Order API ID\" | \"Product API ID\"\n\nAnd use the appropriate ID when calling the appropriate endpoints."
+		},
+		{
+			"name": "Product & Stock managment",
+			"item": [
+				{
+					"name": "Create a product",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"part_number\": \"9867676212121\",\n    \"category\": \"{{v4-domain}}/api/v4/categories/RESTFUL_ID/\",\n    \"client\": \"{{v4-domain}}/api/v4/clients/RESTFUL_ID/\",\n    \"supplier\": \"{{v4-domain}}/api/v4/suppliers/RESTFUL_ID/\",\n    \"data\": {\n         \"supplier_part_number\": \"12345\",\n         \"supplier_free_stock\": 2,\n         \"uom\": \"UOM\",\n        \"low_stock\": 1\n    }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{v4-domain}}/api/v4/products/",
+							"host": [
+								"{{v4-domain}}"
+							],
+							"path": [
+								"api",
+								"v4",
+								"products",
+								""
+							]
+						},
+						"description": "Note: the fields inside the “data” attribute below are defined by the product data model installed for the Retailer. Changes to this data model will dynamically be available via the REST API. Some attributes are system generated and some are provided by the suppliers after the product is created."
+					},
+					"response": []
+				},
+				{
+					"name": "List products",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{v4-domain}}/api/v4/products/?format=json",
+							"host": [
+								"{{v4-domain}}"
+							],
+							"path": [
+								"api",
+								"v4",
+								"products",
+								""
+							],
+							"query": [
+								{
+									"key": "format",
+									"value": "json"
+								}
+							]
+						},
+						"description": "You may get multiple results for a part number search, as there may be more than one supplier with the same part number on Virtualstock. Part numbers are unique by suppliers on Virtualstock."
+					},
+					"response": [
+						{
+							"name": "List products",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{v4-domain}}/api/v4/products/?format=json",
+									"host": [
+										"{{v4-domain}}"
+									],
+									"path": [
+										"api",
+										"v4",
+										"products",
+										""
+									],
+									"query": [
+										{
+											"key": "format",
+											"value": "json"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Server",
+									"value": "nginx"
+								},
+								{
+									"key": "Date",
+									"value": "Thu, 21 Sep 2023 12:51:34 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Content-Length",
+									"value": "39"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "WWW-Authenticate",
+									"value": "Basic realm=\"api\""
+								},
+								{
+									"key": "Vary",
+									"value": "Accept,Accept-Language,Cookie"
+								},
+								{
+									"key": "Allow",
+									"value": "GET, POST, HEAD, OPTIONS"
+								},
+								{
+									"key": "Content-Language",
+									"value": "en-gb"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "DENY"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-XSS-Protection",
+									"value": "1; mode=block"
+								},
+								{
+									"key": "Referrer-Policy",
+									"value": "same-origin"
+								},
+								{
+									"key": "Set-Cookie",
+									"value": "sessionid=ceqo19ukl0fw00xb3wix7ui0bzedtiav; expires=Thu, 21 Sep 2023 16:51:34 GMT; HttpOnly; Max-Age=14400; Path=/; SameSite=Lax; Secure"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"count\": 1713,\n    \"next\": \"https://www.sandbox.the-edge.io/api/v4/products/?format=json&limit=100&offset=100\",\n    \"previous\": null,\n    \"results\": [\n        {\n            \"url\": \"https://www.sandbox.the-edge.io/api/v4/products/617172/?format=json\",\n            \"part_number\": \"0552075\",\n            \"category\": \"https://www.sandbox.the-edge.io/api/v4/categories/5544/?format=json\",\n            \"client\": \"https://www.sandbox.the-edge.io/api/v4/clients/637/?format=json\",\n            \"supplier\": \"https://www.sandbox.the-edge.io/api/v4/suppliers/3994/?format=json\",\n            \"data\": {\n                \"back_in_stock_date\": \"\", // Note the list of attributes on the product \n                \t\t\t\t\t\t  // will vary based on the retailers configuration\n                \t\t\t\t\t\t  // on the platform\n            }\n        },\n        {\n            \"url\": \"https://www.sandbox.the-edge.io/api/v4/products/617175/?format=json\",\n            \"part_number\": \"0552078\",\n            \"category\": \"https://www.sandbox.the-edge.io/api/v4/categories/5544/?format=json\",\n            \"client\": \"https://www.sandbox.the-edge.io/api/v4/clients/637/?format=json\",\n            \"supplier\": \"https://www.sandbox.the-edge.io/api/v4/suppliers/3994/?format=json\",\n            \"data\": {\n                \"back_in_stock_date\": \"\", // Note the list of attributes on the product \n                \t\t\t\t\t\t  // will vary based on the retailers configuration\n                \t\t\t\t\t\t  // on the platform\n            }\n        }\n    ]\n}"
+						}
+					]
+				},
+				{
+					"name": "Retrieve a product",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{v4-domain}}/api/v4/products/{REST_ID}?format=json",
+							"host": [
+								"{{v4-domain}}"
+							],
+							"path": [
+								"api",
+								"v4",
+								"products",
+								"{REST_ID}"
+							],
+							"query": [
+								{
+									"key": "format",
+									"value": "json"
+								}
+							]
+						},
+						"description": "You may get multiple results for a part number search, as there may be more than one supplier with the same part number on Virtualstock. Part numbers are unique by suppliers on Virtualstock."
+					},
+					"response": []
+				},
+				{
+					"name": "Retrieve a product by part number",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{v4-domain}}/api/v4/products/?part_number={SKU123}",
+							"host": [
+								"{{v4-domain}}"
+							],
+							"path": [
+								"api",
+								"v4",
+								"products",
+								""
+							],
+							"query": [
+								{
+									"key": "part_number",
+									"value": "{SKU123}"
+								}
+							]
+						},
+						"description": "You may get multiple results for a part number search, as there may be more than one supplier with the same part number on Virtualstock. Part numbers are unique by suppliers on Virtualstock."
+					},
+					"response": []
+				},
+				{
+					"name": "Update a product",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"data\": {\n         \"leadtime_in_days\": 10\n         //\"any_other_custom_field_name\": \"value\"\n    }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{v4-domain}}/api/v4/products/{PRODUCT_REST_ID}/?format=json",
+							"host": [
+								"{{v4-domain}}"
+							],
+							"path": [
+								"api",
+								"v4",
+								"products",
+								"{PRODUCT_REST_ID}",
+								""
+							],
+							"query": [
+								{
+									"key": "format",
+									"value": "json"
+								}
+							]
+						},
+						"description": "Use the `PATCH` method to amend any field on the product data model. The `PRODUCT_REST_ID` in the URL above can be retrieved from `/api/v4/products`  \n  \nThe list of fields available vary from one Retailer to the next. You can update all fields at once or only the fields you want to change.\n\nThe example below will provide an update to the product field called `leadtime_in_days`.\n\nNOTE: Virtualstock will \"lock\" the product when it's busy updating the Retailers systems, i.e when the product is in a status of `Publishing`. Once complete the product will unlock into a `Published` state. Your integration needs to keep retrying every few minutes if the stock update receives a `409 conflict` response which produces the error below\n\n``` json\n{\n\"detail\": \"Can't update a product which is in a publishing status.\"\n}\n\n```"
+					},
+					"response": []
+				},
+				{
+					"name": "Update stock availability",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"supplier_free_stock\": 2\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{v4-domain}}/api/v4/products/{PRODUCT_REST_ID}/stock",
+							"host": [
+								"{{v4-domain}}"
+							],
+							"path": [
+								"api",
+								"v4",
+								"products",
+								"{PRODUCT_REST_ID}",
+								"stock"
+							]
+						},
+						"description": "Provide a stock availability update. This endpoint is optimised for stock only updates and is consequently performs a lot faster then the `PATCH` **Update a product** endpoint\n\n**Please note:** Only use this endpoint for updates to only the stock value of a product. If your retailer would like you to provide more fields on the product such as back in stock dates or lead times as well as stock then please use the \"Update product\" endpoint. In that endpoint soine retailers have only `free_stock` on their product data model instead of `supplier_free_stock` and you need specify the correct field per retailer. For this stock only field endpoint please provide `supplier_free_stock` always and the endpoint will work out the correct field to populate for any retailer."
+					},
+					"response": [
+						{
+							"name": "Update stock successfully",
+							"originalRequest": {
+								"method": "PATCH",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"supplier_free_stock\": 2\n}\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{v4-domain}}/api/v4/products/{PRODUCT_REST_ID}/stock",
+									"host": [
+										"{{v4-domain}}"
+									],
+									"path": [
+										"api",
+										"v4",
+										"products",
+										"{PRODUCT_REST_ID}",
+										"stock"
+									]
+								}
+							},
+							"_postman_previewlanguage": "Text",
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "Product not found",
+							"originalRequest": {
+								"method": "PATCH",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"supplier_free_stock\": 2\n}\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{v4-domain}}/api/v4/products/{PRODUCT_REST_ID}/stock",
+									"host": [
+										"{{v4-domain}}"
+									],
+									"path": [
+										"api",
+										"v4",
+										"products",
+										"{PRODUCT_REST_ID}",
+										"stock"
+									]
+								}
+							},
+							"status": "Not Found",
+							"code": 404,
+							"_postman_previewlanguage": "Text",
+							"header": null,
+							"cookie": [],
+							"body": "{\n    \"detail\": \"Product not found.\",\n    \"code\": \"PRODUCT_NOT_FOUND\"\n}"
+						},
+						{
+							"name": "Required field missing",
+							"originalRequest": {
+								"method": "PATCH",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"stock\": \"invalid-argument\"\n}\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{v4-domain}}/api/v4/products/{PRODUCT_REST_ID}/stock",
+									"host": [
+										"{{v4-domain}}"
+									],
+									"path": [
+										"api",
+										"v4",
+										"products",
+										"{PRODUCT_REST_ID}",
+										"stock"
+									]
+								}
+							},
+							"_postman_previewlanguage": "Text",
+							"header": null,
+							"cookie": [],
+							"body": "{\n    \"supplier_free_stock\": [\n        \"This field is required.\"\n    ]\n}"
+						}
+					]
+				},
+				{
+					"name": "Deleting a product",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{v4-domain}}/api/v4/products/{PRODUCT_REST_ID}",
+							"host": [
+								"{{v4-domain}}"
+							],
+							"path": [
+								"api",
+								"v4",
+								"products",
+								"{PRODUCT_REST_ID}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List product categories",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{v4-domain}}/api/v4/categories/",
+							"host": [
+								"{{v4-domain}}"
+							],
+							"path": [
+								"api",
+								"v4",
+								"categories",
+								""
+							]
+						},
+						"description": "Categories available will be driven by your data model set up on Virtualstock."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"auth": {
+		"type": "basic"
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "v4-domain",
+			"value": "https://www.sandbox.the-edge.io",
+			"type": "string"
+		},
+		{
+			"key": "a250992e-631a-4a31-8c0e-5072871e3cf5",
+			"value": "",
+			"type": "string",
+			"disabled": true
+		}
+	]
+}
